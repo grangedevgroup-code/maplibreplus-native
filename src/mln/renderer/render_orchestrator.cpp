@@ -414,6 +414,11 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
                 updateList[index] = true;
             }
         }
+        if (updateParameters->terrain && updateParameters->terrain->getSource() == sourceImpl->id &&
+            sourceImpl->type == style::SourceType::RasterDEM) {
+            sourceNeedsRendering = true;
+        }
+
         tileParameters.isUpdateSynchronous = sourceImpl->isUpdateSynchronous();
         source->update(sourceImpl, filteredLayersForSource, sourceNeedsRendering, sourceNeedsRelayout, tileParameters);
         filteredLayersForSource.clear();
@@ -947,6 +952,30 @@ size_t RenderOrchestrator::numLayerGroups() const noexcept {
     return layerGroupsByLayerIndex.size();
 }
 
+void RenderOrchestrator::updateTerrain(gfx::ShaderRegistry& shaders,
+                                       gfx::Context& context,
+                                       const TransformState& state,
+                                       const std::shared_ptr<UpdateParameters>& updateParameters,
+                                       UniqueChangeRequestVec& changes) {
+    const auto& options = updateParameters->terrain;
+
+    if (!options || !options->valid()) {
+        if (terrain) {
+            terrain->teardown(changes);
+            terrain.reset();
+        }
+        return;
+    }
+
+    if (!terrain) {
+        terrain = std::make_unique<RenderTerrain>();
+    }
+    terrain->setOptions(*options);
+
+    RenderSource* demSource = getRenderSource(options->getSource());
+    terrain->update(shaders, context, state, demSource, changes);
+}
+
 void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
                                       gfx::Context& context,
                                       const TransformState& state,
@@ -985,6 +1014,13 @@ void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
             observer->onRenderError(std::current_exception());
         }
     }
+
+    try {
+        updateTerrain(shaders, context, state, updateParameters, changes);
+    } catch (...) {
+        observer->onRenderError(std::current_exception());
+    }
+
     addChanges(changes);
 }
 

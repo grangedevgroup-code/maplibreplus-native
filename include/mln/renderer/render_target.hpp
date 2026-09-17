@@ -29,7 +29,7 @@ using LayerGroupBasePtr = std::shared_ptr<LayerGroupBase>;
 class RenderTarget {
 public:
     RenderTarget(gfx::Context& context, const Size size, const gfx::TextureChannelDataType type);
-    ~RenderTarget();
+    virtual ~RenderTarget();
 
     /// Get the render target texture
     const gfx::Texture2DPtr& getTexture();
@@ -73,10 +73,10 @@ public:
     }
 
     /// Upload the layer groups
-    void upload(gfx::UploadPass& uploadPass);
+    virtual void upload(gfx::UploadPass& uploadPass);
 
     /// Render the layer groups
-    void render(RenderOrchestrator&, const RenderTree&, PaintParameters&);
+    virtual void render(RenderOrchestrator&, const RenderTree&, PaintParameters&);
 
 protected:
     gfx::Context& context;

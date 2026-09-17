@@ -294,6 +294,10 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         // Give the render targets a chance to upload
         orchestrator.visitRenderTargets([&](RenderTarget& renderTarget) { renderTarget.upload(*uploadPass); });
 
+        if (auto* terrain = orchestrator.getTerrain()) {
+            terrain->upload(*uploadPass);
+        }
+
         // Upload the Debug layer group
         orchestrator.visitDebugLayerGroups([&](LayerGroupBase& layerGroup) { layerGroup.upload(*uploadPass); });
     }
@@ -442,11 +446,25 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         common3DPass();
         drawable3DPass();
     }
+    const auto drawableTerrainPass = [&] {
+        const auto debugGroup(parameters.renderPass->createDebugGroup("drawables-terrain"));
+        auto* terrain = orchestrator.getTerrain();
+        parameters.pass = RenderPass::Opaque;
+        parameters.depthRangeSize = 1 - 3 * PaintParameters::numSublayers * PaintParameters::depthEpsilon;
+        parameters.currentLayer = 0;
+        terrain->updateUniforms(parameters);
+        terrain->render(orchestrator, parameters);
+    };
+
     drawableTargetsPass();
     commonClearPass();
     context.bindGlobalUniformBuffers(*parameters.renderPass);
-    drawableOpaquePass();
-    drawableTranslucentPass();
+    if (orchestrator.hasTerrain()) {
+        drawableTerrainPass();
+    } else {
+        drawableOpaquePass();
+        drawableTranslucentPass();
+    }
     drawableDebugOverlays();
 
     // Give the layers a chance to do cleanup

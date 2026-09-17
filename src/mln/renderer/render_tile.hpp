@@ -53,6 +53,7 @@ public:
                               const TransformState&) const;
 
     const OverscaledTileID& getOverscaledTileID() const;
+    const Tile& getTile() const { return tile; }
     bool holdForFade() const;
 
     Bucket* getBucket(const style::Layer::Impl&) const;

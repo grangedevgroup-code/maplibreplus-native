@@ -97,6 +97,8 @@ public:
 
     mat4 matrixForTile(const UnwrappedTileID&, bool aligned = false) const;
 
+    const mat4* projMatrixOverride = nullptr;
+
     // Stencil handling
 public:
 #if MLN_RENDER_BACKEND_OPENGL

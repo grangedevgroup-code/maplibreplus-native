@@ -15,6 +15,7 @@
 #include <mln/renderer/image_manager_observer.hpp>
 #include <mln/text/placement.hpp>
 #include <mln/renderer/render_tree.hpp>
+#include <mln/renderer/terrain.hpp>
 
 #include <map>
 #include <memory>
@@ -153,6 +154,9 @@ public:
         }
     }
 
+    RenderTerrain* getTerrain() const { return terrain.get(); }
+    bool hasTerrain() const { return terrain && terrain->isRenderable(); }
+
     void updateDebugLayerGroups(const RenderTree& renderTree, PaintParameters& parameters);
 
     template <typename Func /* void(LayerGroupBase&) */>
@@ -171,6 +175,12 @@ private:
     bool hasTransitions(TimePoint) const;
 
     RenderSource* getRenderSource(const std::string& id) const;
+
+    void updateTerrain(gfx::ShaderRegistry&,
+                       gfx::Context&,
+                       const TransformState&,
+                       const std::shared_ptr<UpdateParameters>&,
+                       UniqueChangeRequestVec& changes);
 
     RenderLayer* getRenderLayer(const std::string& id);
     const RenderLayer* getRenderLayer(const std::string& id) const;
@@ -245,6 +255,7 @@ private:
     LayerGroupMap layerGroupsByLayerIndex;
 
     std::vector<RenderTargetPtr> renderTargets;
+    std::unique_ptr<RenderTerrain> terrain;
     RenderItem::DebugLayerGroupMap debugLayerGroups;
 };
 

@@ -172,6 +172,7 @@ list(APPEND SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/dynamic_texture_atlas.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/gpu_expression.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/hillshade_prepare_drawable_data.hpp
+    ${PROJECT_SOURCE_DIR}/src/mln/gfx/terrain_drawable_data.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/color_relief_drawable_data.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/image_drawable_data.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/line_drawable_data.hpp
@@ -180,6 +181,10 @@ list(APPEND SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/uniform_buffer.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/vertex_attribute.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/render_target.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain.hpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain_render_target.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain_render_target.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/change_request.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/layer_group.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/tile_layer_group.cpp

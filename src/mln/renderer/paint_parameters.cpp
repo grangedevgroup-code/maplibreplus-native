@@ -113,6 +113,10 @@ void PaintParameters::updateStencilBufferAvailability() {
 mat4 PaintParameters::matrixForTile(const UnwrappedTileID& tileID, bool aligned) const {
     mat4 matrix;
     state.matrixFor(matrix, tileID);
+    if (projMatrixOverride) {
+        matrix::multiply(matrix, *projMatrixOverride, matrix);
+        return matrix;
+    }
     matrix::multiply(matrix, aligned ? transformParams.alignedProjMatrix : transformParams.projMatrix, matrix);
     return matrix;
 }
