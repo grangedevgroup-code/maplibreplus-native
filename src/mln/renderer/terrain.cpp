@@ -2,7 +2,9 @@
 
 #include <mln/geometry/dem_data.hpp>
 #include <mln/gfx/context.hpp>
+#include <mln/gfx/color_mode.hpp>
 #include <mln/gfx/cull_face_mode.hpp>
+#include <mln/gfx/depth_mode.hpp>
 #include <mln/gfx/drawable.hpp>
 #include <mln/gfx/drawable_builder.hpp>
 #include <mln/gfx/shader_registry.hpp>
@@ -18,6 +20,7 @@
 #include <mln/shaders/shader_program_base.hpp>
 #include <mln/shaders/shader_defines.hpp>
 #include <mln/shaders/terrain_layer_ubo.hpp>
+#include <mln/style/types.hpp>
 #include <mln/tile/raster_dem_tile.hpp>
 #include <mln/tile/tile.hpp>
 #include <mln/util/constants.hpp>
@@ -26,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <set>
 
@@ -232,8 +236,7 @@ void RenderTerrain::update(gfx::ShaderRegistry& shaders,
         }
 
         const DEMData& dem = bucket->getDEMData();
-        auto demIt = demByTile.find(tileID);
-        if (demIt == demByTile.end()) {
+        if (!demByTile.contains(tileID)) {
             demByTile.emplace(tileID, std::make_shared<const DEMData>(dem));
         }
 

@@ -20,7 +20,7 @@ float terrain_depth_texel_elevation(ivec2 pos) {
 }
 
 float terrain_depth_elevation(vec2 pos) {
-    vec2 coord = (u_terrain_matrix * vec4(pos, 0.0, 1.0)).xy * u_terrain_dim + 1.5;
+    vec2 coord = (u_terrain_matrix * vec4(pos, 0.0, 1.0)).xy * u_terrain_dim + 0.5;
     vec2 f = fract(coord);
     ivec2 c = ivec2(floor(coord));
     ivec2 hi = textureSize(u_terrain_dem, 0) - 1;
