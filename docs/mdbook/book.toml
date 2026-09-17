@@ -1,0 +1,12 @@
+[book]
+authors = ["MapLibre Contributors"]
+language = "en"
+src = "src"
+title = "MapLibre Native Developer Documentation"
+
+[output.html]
+additional-css = ["diff.css"]
+additional-js = []
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
