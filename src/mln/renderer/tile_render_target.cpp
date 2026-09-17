@@ -62,6 +62,8 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
     const mat4* prevOverride = parameters.projMatrixOverride;
     parameters.projMatrixOverride = &projMatrix;
 
+    parameters.context.bindGlobalUniformBuffers(*parameters.renderPass);
+
     const auto layerGroupCount = orchestrator.numLayerGroups();
 
     parameters.currentLayer = 0;
@@ -89,6 +91,8 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
             parameters.currentLayer--;
         }
     });
+
+    parameters.context.unbindGlobalUniformBuffers(*parameters.renderPass);
 
     parameters.projMatrixOverride = prevOverride;
 

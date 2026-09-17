@@ -869,6 +869,14 @@ void RenderOrchestrator::clearData() {
     for (const auto& entry : renderLayers) {
         entry.second->layerRemoved(changes);
     }
+    if (terrain) {
+        terrain->teardown(changes);
+        terrain.reset();
+    }
+    if (globe) {
+        globe->teardown(changes);
+        globe.reset();
+    }
     addChanges(changes);
 
     debugLayerGroups.clear();

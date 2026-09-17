@@ -295,10 +295,12 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         orchestrator.visitRenderTargets([&](RenderTarget& renderTarget) { renderTarget.upload(*uploadPass); });
 
         if (auto* terrain = orchestrator.getTerrain()) {
+            terrain->updateUniforms(parameters);
             terrain->upload(*uploadPass);
         }
 
         if (auto* globe = orchestrator.getGlobe()) {
+            globe->updateUniforms(parameters);
             globe->upload(*uploadPass);
         }
 
@@ -446,17 +448,12 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         }
     };
 
-    if (parameters.staticData.has3D) {
-        common3DPass();
-        drawable3DPass();
-    }
     const auto drawableGlobePass = [&] {
         const auto debugGroup(parameters.renderPass->createDebugGroup("drawables-globe"));
         auto* globe = orchestrator.getGlobe();
         parameters.pass = RenderPass::Opaque;
         parameters.depthRangeSize = 1 - 3 * PaintParameters::numSublayers * PaintParameters::depthEpsilon;
         parameters.currentLayer = 0;
-        globe->updateUniforms(parameters);
         globe->render(orchestrator, parameters);
     };
 
@@ -466,10 +463,13 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         parameters.pass = RenderPass::Opaque;
         parameters.depthRangeSize = 1 - 3 * PaintParameters::numSublayers * PaintParameters::depthEpsilon;
         parameters.currentLayer = 0;
-        terrain->updateUniforms(parameters);
         terrain->render(orchestrator, parameters);
     };
 
+    if (parameters.staticData.has3D) {
+        common3DPass();
+        drawable3DPass();
+    }
     drawableTargetsPass();
     commonClearPass();
     context.bindGlobalUniformBuffers(*parameters.renderPass);
