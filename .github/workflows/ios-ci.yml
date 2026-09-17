@@ -363,23 +363,3 @@ jobs:
       - name: Mark result as failed
         if: needs.ios-build.result != 'success' || needs.ios-build-cmake.result != 'success'
         run: exit 1
-
-      # Trigger release on main if VERSION file changed
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: github.ref == 'refs/heads/main'
-        with:
-          persist-credentials: false
-
-      - name: VERSION file changed
-        if: github.ref == 'refs/heads/main'
-        id: version-file-ios-changed
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
-        with:
-          files: platform/ios/VERSION
-
-      - name: Run release
-        if: github.ref == 'refs/heads/main' && steps.version-file-ios-changed.outputs.any_changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run ios-release.yml --ref ${{ github.ref }}
