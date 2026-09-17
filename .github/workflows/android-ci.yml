@@ -124,10 +124,6 @@ jobs:
         if: matrix.renderer == 'opengl'
         run: ./gradlew dokkaGenerate
 
-      - name: Build Examples documentation
-        if: matrix.renderer == 'opengl'
-        run: make mkdocs-build
-
       - name: Copy developer config with API key for UI tests
         if: github.ref == 'refs/heads/main'
         run: |

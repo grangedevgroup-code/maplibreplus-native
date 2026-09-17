@@ -253,12 +253,8 @@ ios_application(
 filegroup(
     name = "extra_files",
     srcs = [
-        "BAZEL.md",
-        "CHANGELOG.md",
         "MapLibre.podspec",
         "PrivacyInfo.xcprivacy",
-        "README.md",
-        "RELEASE.md",
         "VERSION",
     ],
     visibility = ["@rules_xcodeproj//xcodeproj:generated"],
