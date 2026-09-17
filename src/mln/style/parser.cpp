@@ -112,6 +112,14 @@ StyleParseResult Parser::parse(const std::string& json) {
         parseLight(document["light"]);
     }
 
+    if (document.HasMember("projection")) {
+        parseProjection(document["projection"]);
+    }
+
+    if (document.HasMember("terrain")) {
+        parseTerrain(document["terrain"]);
+    }
+
     if (document.HasMember("sources")) {
         parseSources(document["sources"]);
     }
@@ -234,6 +242,57 @@ void Parser::parseLight(const JSValue& value) {
     }
 
     light = *converted;
+}
+
+void Parser::parseProjection(const JSValue& value) {
+    std::optional<ProjectionType> type;
+
+    if (value.IsString()) {
+        type = projectionTypeFromString({value.GetString(), value.GetStringLength()});
+    } else if (value.IsObject() && value.HasMember("type")) {
+        const JSValue& typeValue = value["type"];
+        if (typeValue.IsString()) {
+            type = projectionTypeFromString({typeValue.GetString(), typeValue.GetStringLength()});
+        }
+    }
+
+    if (!type) {
+        Log::Warning(Event::ParseStyle,
+                     "projection type must be one of mercator, vertical-perspective or globe");
+        return;
+    }
+
+    projection.setType(*type);
+}
+
+void Parser::parseTerrain(const JSValue& value) {
+    if (value.IsNull()) {
+        terrain = std::nullopt;
+        return;
+    }
+
+    if (!value.IsObject()) {
+        Log::Warning(Event::ParseStyle, "terrain must be an object");
+        return;
+    }
+
+    if (!value.HasMember("source") || !value["source"].IsString()) {
+        Log::Warning(Event::ParseStyle, "terrain must have a source");
+        return;
+    }
+
+    Terrain parsed{std::string(value["source"].GetString(), value["source"].GetStringLength()), 1.0f};
+
+    if (value.HasMember("exaggeration")) {
+        const JSValue& exaggeration = value["exaggeration"];
+        if (exaggeration.IsNumber()) {
+            parsed.setExaggeration(static_cast<float>(exaggeration.GetDouble()));
+        } else {
+            Log::Warning(Event::ParseStyle, "terrain exaggeration must be a number");
+        }
+    }
+
+    terrain = std::move(parsed);
 }
 
 void Parser::parseSources(const JSValue& value) {

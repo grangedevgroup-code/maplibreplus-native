@@ -27,6 +27,8 @@ MLN_PUBLIC_GENERATED_STYLE_HEADERS = [
     "include/mln/style/layers/background_layer.hpp",
     "include/mln/style/layers/location_indicator_layer.hpp",
     "include/mln/style/light.hpp",
+    "include/mln/style/projection.hpp",
+    "include/mln/style/terrain.hpp",
 ]
 
 MLN_PRIVATE_GENERATED_STYLE_HEADERS = [
@@ -67,6 +69,7 @@ MLN_GENERATED_STYLE_SOURCE = [
     "src/mln/style/layers/location_indicator_layer_properties.cpp",
     "src/mln/style/layers/location_indicator_layer.cpp",
     "src/mln/style/light.cpp",
+    "src/mln/style/projection.cpp",
 ]
 
 MLN_GENERATED_SHADER_HEADERS = [
@@ -562,6 +565,7 @@ MLN_CORE_SOURCE = [
     "src/mln/util/filesystem.hpp",
     "src/mln/util/font_stack.cpp",
     "src/mln/util/geo.cpp",
+    "src/mln/util/globe.cpp",
     "src/mln/util/geojson_impl.cpp",
     "src/mln/util/geometry_util.cpp",
     "src/mln/util/geometry_util.hpp",

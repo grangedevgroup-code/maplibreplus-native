@@ -122,6 +122,8 @@ void Style::Impl::parse(const std::string& json_) {
     defaultCamera.roll = parser.roll;
 
     setLight(std::make_unique<Light>(parser.light));
+    setProjection(parser.projection);
+    setTerrain(parser.terrain);
 
     if (fileSource) {
         if (parser.sprites.empty()) {
@@ -248,6 +250,30 @@ void Style::Impl::setLight(std::unique_ptr<Light> light_) {
 
 Light* Style::Impl::getLight() const {
     return light.get();
+}
+
+const ProjectionDefinition& Style::Impl::getProjection() const {
+    return projection;
+}
+
+void Style::Impl::setProjection(const ProjectionDefinition& projection_) {
+    if (projection == projection_) {
+        return;
+    }
+    projection = projection_;
+    observer->onUpdate();
+}
+
+const std::optional<Terrain>& Style::Impl::getTerrain() const {
+    return terrain;
+}
+
+void Style::Impl::setTerrain(const std::optional<Terrain>& terrain_) {
+    if (terrain == terrain_) {
+        return;
+    }
+    terrain = terrain_;
+    observer->onUpdate();
 }
 
 std::string Style::Impl::getName() const {

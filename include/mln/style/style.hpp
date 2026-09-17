@@ -4,12 +4,15 @@
 #include <mln/map/camera.hpp>
 #include <mln/style/image.hpp>
 #include <mln/style/transition_options.hpp>
+#include <mln/style/projection.hpp>
+#include <mln/style/terrain.hpp>
 #include <mln/util/geo.hpp>
 #include <mln/util/immutable.hpp>
 
 #include <string>
 #include <vector>
 #include <memory>
+#include <optional>
 
 namespace mln {
 
@@ -45,6 +48,14 @@ public:
     const Light* getLight() const;
 
     void setLight(std::unique_ptr<Light>);
+
+    // Projection
+    const ProjectionDefinition& getProjection() const;
+    void setProjection(const ProjectionDefinition&);
+
+    // Terrain
+    const std::optional<Terrain>& getTerrain() const;
+    void setTerrain(const std::optional<Terrain>&);
 
     // Images
     std::optional<Image> getImage(const std::string&) const;

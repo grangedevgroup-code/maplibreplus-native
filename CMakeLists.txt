@@ -372,6 +372,8 @@ list(APPEND INCLUDE_FILES
     ${PROJECT_SOURCE_DIR}/include/mln/style/layers/raster_layer.hpp
     ${PROJECT_SOURCE_DIR}/include/mln/style/layers/symbol_layer.hpp
     ${PROJECT_SOURCE_DIR}/include/mln/style/light.hpp
+    ${PROJECT_SOURCE_DIR}/include/mln/style/projection.hpp
+    ${PROJECT_SOURCE_DIR}/include/mln/style/terrain.hpp
     ${PROJECT_SOURCE_DIR}/include/mln/style/position.hpp
     ${PROJECT_SOURCE_DIR}/include/mln/style/property_expression.hpp
     ${PROJECT_SOURCE_DIR}/include/mln/style/property_value.hpp
@@ -807,6 +809,7 @@ list(APPEND SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/mln/style/layers/symbol_layer_properties.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/style/layout_property.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/style/light.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/style/projection.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/style/light_impl.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/style/light_impl.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/style/light_observer.hpp
@@ -937,6 +940,7 @@ list(APPEND SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/mln/util/filesystem.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/util/font_stack.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/util/geo.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/util/globe.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/util/geojson_impl.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/util/geometry_util.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/util/geometry_util.hpp

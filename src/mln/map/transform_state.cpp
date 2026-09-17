@@ -7,6 +7,7 @@
 #include <mln/util/interpolate.hpp>
 #include <mln/util/logging.hpp>
 #include <mln/util/projection.hpp>
+#include <mln/util/globe.hpp>
 #include <mln/util/tile_coordinate.hpp>
 
 #include <numbers>
@@ -357,6 +358,177 @@ void TransformState::setFreeCameraOptions(const FreeCameraOptions& options) {
     }
 }
 
+void TransformState::setProjection(const style::ProjectionDefinition& projection_) {
+    if (projection != projection_) {
+        projection = projection_;
+        requestMatricesUpdate = true;
+    }
+}
+
+double TransformState::getGlobeness() const {
+    return projection.transitionState(getZoom());
+}
+
+bool TransformState::isGlobeRendering() const {
+    return getGlobeness() > 0.0;
+}
+
+void TransformState::updateGlobeMatrices() const {
+    namespace globe = util::globe;
+
+    const double worldSize = Projection::worldSize(scale);
+    const LatLng center = getLatLng(LatLng::Unwrapped);
+    const double centerLatRad = util::deg2rad(center.latitude());
+    const double centerLngRad = util::deg2rad(center.longitude());
+    const double cameraToCenterDistance = getCameraToCenterDistance();
+
+    globeRadiusPixels = globe::getGlobeRadiusPixels(worldSize, center.latitude());
+
+    const double nearZ = 0.5;
+    const double farZ = cameraToCenterDistance + globeRadiusPixels * 2.0;
+
+    matrix::perspective(globeMatrix, fov, static_cast<double>(size.width) / size.height, nearZ, farZ);
+
+    const ScreenCoordinate offset = getCenterOffset();
+    globeMatrix[8] = -offset.x * 2.0 / size.width;
+    globeMatrix[9] = offset.y * 2.0 / size.height;
+
+    if (getNorthOrientation() != NorthOrientation::Upwards) {
+        matrix::rotate_z(globeMatrix, globeMatrix, -getNorthOrientationAngle());
+    }
+
+    matrix::translate(globeMatrix, globeMatrix, 0.0, 0.0, -cameraToCenterDistance);
+    matrix::rotate_z(globeMatrix, globeMatrix, -roll);
+    matrix::rotate_x(globeMatrix, globeMatrix, -pitch);
+    matrix::rotate_z(globeMatrix, globeMatrix, -bearing);
+    matrix::translate(globeMatrix, globeMatrix, 0.0, 0.0, -globeRadiusPixels);
+    matrix::rotate_x(globeMatrix, globeMatrix, centerLatRad);
+    matrix::rotate_y(globeMatrix, globeMatrix, -centerLngRad);
+    matrix::scale(globeMatrix, globeMatrix, globeRadiusPixels, globeRadiusPixels, globeRadiusPixels);
+
+    if (matrix::invert(invGlobeMatrix, globeMatrix)) {
+        invGlobeMatrix = matrix::identity4();
+    }
+
+    vec3 cameraPosition = {0.0, 0.0, cameraToCenterDistance / globeRadiusPixels};
+    cameraPosition = globe::rotateZ(cameraPosition, roll);
+    cameraPosition = globe::rotateX(cameraPosition, pitch);
+    cameraPosition = globe::rotateZ(cameraPosition, bearing);
+    cameraPosition = globe::add(cameraPosition, vec3{0.0, 0.0, 1.0});
+    cameraPosition = globe::rotateX(cameraPosition, -centerLatRad);
+    cameraPosition = globe::rotateY(cameraPosition, centerLngRad);
+    globeCameraPosition = cameraPosition;
+
+    const double distanceCameraToB = cameraToCenterDistance / globeRadiusPixels;
+    const double distanceCameraToA = std::sin(pitch) * distanceCameraToB;
+    const double distanceAtoC = std::cos(pitch) * distanceCameraToB + 1.0;
+    const double distanceCameraToC = std::sqrt(distanceCameraToA * distanceCameraToA + distanceAtoC * distanceAtoC);
+    const double tangentPlaneDistanceToC = 1.0 / distanceCameraToC;
+
+    double vectorCtoCamX = -distanceCameraToA;
+    double vectorCtoCamY = distanceAtoC;
+    const double vectorCtoCamLength = std::sqrt(vectorCtoCamX * vectorCtoCamX + vectorCtoCamY * vectorCtoCamY);
+    vectorCtoCamX /= vectorCtoCamLength;
+    vectorCtoCamY /= vectorCtoCamLength;
+
+    vec3 planeVector = {0.0, vectorCtoCamX, vectorCtoCamY};
+    planeVector = globe::rotateZ(planeVector, bearing);
+    planeVector = globe::rotateX(planeVector, -centerLatRad);
+    planeVector = globe::rotateY(planeVector, centerLngRad);
+    const double planeScale = 1.0 / globe::length(planeVector);
+    planeVector = globe::scale(planeVector, planeScale);
+    globeClippingPlane = {planeVector[0], planeVector[1], planeVector[2], -tangentPlaneDistanceToC * planeScale};
+}
+
+const mat4& TransformState::getGlobeMatrix() const {
+    updateMatricesIfNeeded();
+    return globeMatrix;
+}
+
+const mat4& TransformState::getInvGlobeMatrix() const {
+    updateMatricesIfNeeded();
+    return invGlobeMatrix;
+}
+
+const vec4& TransformState::getGlobeClippingPlane() const {
+    updateMatricesIfNeeded();
+    return globeClippingPlane;
+}
+
+const vec3& TransformState::getGlobeCameraPosition() const {
+    updateMatricesIfNeeded();
+    return globeCameraPosition;
+}
+
+double TransformState::getGlobeRadiusPixels() const {
+    updateMatricesIfNeeded();
+    return globeRadiusPixels;
+}
+
+vec4 TransformState::getTileMercatorCoords(const UnwrappedTileID& tileID) {
+    const double tileScale = static_cast<double>(1ull << tileID.canonical.z);
+    return {tileID.canonical.x / tileScale,
+            tileID.canonical.y / tileScale,
+            1.0 / tileScale / util::EXTENT,
+            1.0 / tileScale / util::EXTENT};
+}
+
+ScreenCoordinate TransformState::latLngToScreenCoordinateGlobe(const LatLng& latLng, bool& occluded) const {
+    namespace globe = util::globe;
+
+    const vec3 spherePos = globe::latLngToSurfaceVector(latLng);
+    const vec4& plane = getGlobeClippingPlane();
+    occluded = globe::pointPlaneSignedDistance(plane, spherePos) < 0.0;
+
+    vec4 projected;
+    const vec4 input = {spherePos[0], spherePos[1], spherePos[2], 1.0};
+    matrix::transformMat4(projected, input, getGlobeMatrix());
+    if (projected[3] == 0.0) {
+        return {};
+    }
+    const double ndcX = projected[0] / projected[3];
+    const double ndcY = projected[1] / projected[3];
+    return {(ndcX * 0.5 + 0.5) * size.width, (1.0 - (ndcY * 0.5 + 0.5)) * size.height};
+}
+
+vec3 TransformState::getRayDirectionFromPixel(const ScreenCoordinate& point) const {
+    namespace globe = util::globe;
+
+    const double ndcX = point.x / size.width * 2.0 - 1.0;
+    const double ndcY = 1.0 - point.y / size.height * 2.0;
+
+    vec4 nearPoint;
+    vec4 farPoint;
+    matrix::transformMat4(nearPoint, vec4{ndcX, ndcY, -1.0, 1.0}, getInvGlobeMatrix());
+    matrix::transformMat4(farPoint, vec4{ndcX, ndcY, 1.0, 1.0}, getInvGlobeMatrix());
+
+    if (nearPoint[3] == 0.0 || farPoint[3] == 0.0) {
+        return {0.0, 0.0, 0.0};
+    }
+
+    const vec3 a = {nearPoint[0] / nearPoint[3], nearPoint[1] / nearPoint[3], nearPoint[2] / nearPoint[3]};
+    const vec3 b = {farPoint[0] / farPoint[3], farPoint[1] / farPoint[3], farPoint[2] / farPoint[3]};
+    return globe::normalize(globe::subtract(b, a));
+}
+
+std::optional<LatLng> TransformState::screenCoordinateToLatLngGlobe(const ScreenCoordinate& point) const {
+    namespace globe = util::globe;
+
+    const vec3 origin = getGlobeCameraPosition();
+    const vec3 direction = getRayDirectionFromPixel(point);
+    if (globe::length(direction) == 0.0) {
+        return std::nullopt;
+    }
+
+    double t = 0.0;
+    if (!globe::raySphereIntersection(origin, direction, 1.0, t)) {
+        return std::nullopt;
+    }
+
+    const vec3 hit = globe::add(origin, globe::scale(direction, t));
+    return globe::surfaceVectorToLatLng(globe::normalize(hit));
+}
+
 void TransformState::updateMatricesIfNeeded() const {
     if (!needsMatricesUpdate() || size.isEmpty()) return;
 
@@ -368,6 +540,8 @@ void TransformState::updateMatricesIfNeeded() const {
 
     err = matrix::invert(invertedMatrix, coordMatrix);
     if (err) throw std::runtime_error("failed to invert coordinatePointMatrix");
+
+    updateGlobeMatrices();
 
     requestMatricesUpdate = false;
 }

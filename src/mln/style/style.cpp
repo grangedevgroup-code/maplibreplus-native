@@ -71,6 +71,24 @@ Light* Style::getLight() {
     return impl->getLight();
 }
 
+const ProjectionDefinition& Style::getProjection() const {
+    return impl->getProjection();
+}
+
+void Style::setProjection(const ProjectionDefinition& projection) {
+    impl->mutated = true;
+    impl->setProjection(projection);
+}
+
+const std::optional<Terrain>& Style::getTerrain() const {
+    return impl->getTerrain();
+}
+
+void Style::setTerrain(const std::optional<Terrain>& terrain) {
+    impl->mutated = true;
+    impl->setTerrain(terrain);
+}
+
 const Light* Style::getLight() const {
     return impl->getLight();
 }

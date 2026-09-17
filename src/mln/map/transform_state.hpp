@@ -2,6 +2,7 @@
 
 #include <mln/map/camera.hpp>
 #include <mln/map/mode.hpp>
+#include <mln/style/projection.hpp>
 #include <mln/util/camera.hpp>
 #include <mln/util/constants.hpp>
 #include <mln/util/geo.hpp>
@@ -133,6 +134,25 @@ public:
     // Matrix
     void matrixFor(mat4&, const UnwrappedTileID&) const;
     void getProjMatrix(mat4& matrix, uint16_t nearZ = 1, bool aligned = false) const;
+
+    // Projection
+    const style::ProjectionDefinition& getProjection() const { return projection; }
+    void setProjection(const style::ProjectionDefinition&);
+
+    double getGlobeness() const;
+    bool isGlobeRendering() const;
+
+    const mat4& getGlobeMatrix() const;
+    const mat4& getInvGlobeMatrix() const;
+    const vec4& getGlobeClippingPlane() const;
+    const vec3& getGlobeCameraPosition() const;
+    double getGlobeRadiusPixels() const;
+
+    static vec4 getTileMercatorCoords(const UnwrappedTileID&);
+
+    ScreenCoordinate latLngToScreenCoordinateGlobe(const LatLng&, bool& occluded) const;
+    std::optional<LatLng> screenCoordinateToLatLngGlobe(const ScreenCoordinate&) const;
+    vec3 getRayDirectionFromPixel(const ScreenCoordinate&) const;
 
     // Dimensions
     Size getSize() const;
@@ -288,6 +308,7 @@ private:
     void setScalePoint(double scale, const ScreenCoordinate& point);
 
     void updateMatricesIfNeeded() const;
+    void updateGlobeMatrices() const;
     bool needsMatricesUpdate() const { return requestMatricesUpdate; }
 
     bool setCameraPosition(const vec3& position);
@@ -320,6 +341,7 @@ private:
     bool axonometric = false;
 
     EdgeInsets edgeInsets;
+    style::ProjectionDefinition projection;
     mutable util::Camera camera;
 
     // cache values for spherical mercator math
@@ -331,6 +353,11 @@ private:
     mutable mat4 invProjectionMatrix;
     mutable mat4 coordMatrix;
     mutable mat4 invertedMatrix;
+    mutable mat4 globeMatrix;
+    mutable mat4 invGlobeMatrix;
+    mutable vec4 globeClippingPlane;
+    mutable vec3 globeCameraPosition;
+    mutable double globeRadiusPixels = 0;
 };
 
 } // namespace mln

@@ -12,6 +12,8 @@
 #include <mln/style/source.hpp>
 #include <mln/style/layer.hpp>
 #include <mln/style/collection.hpp>
+#include <mln/style/projection.hpp>
+#include <mln/style/terrain.hpp>
 
 #include <mln/text/glyph.hpp>
 
@@ -24,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <optional>
 
 namespace mln {
 
@@ -85,6 +88,12 @@ public:
     void setLight(std::unique_ptr<Light>);
     Light* getLight() const;
 
+    const ProjectionDefinition& getProjection() const;
+    void setProjection(const ProjectionDefinition&);
+
+    const std::optional<Terrain>& getTerrain() const;
+    void setTerrain(const std::optional<Terrain>&);
+
     std::optional<Immutable<style::Image::Impl>> getImage(const std::string&) const;
     void addImage(std::unique_ptr<style::Image>);
     void removeImage(const std::string&);
@@ -121,6 +130,8 @@ private:
     Collection<Layer> layers;
     TransitionOptions transitionOptions;
     std::unique_ptr<Light> light;
+    ProjectionDefinition projection;
+    std::optional<Terrain> terrain;
     std::unordered_map<std::string, bool> spritesLoadingStatus;
 
     // Defaults
