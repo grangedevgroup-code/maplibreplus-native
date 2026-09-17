@@ -3,6 +3,8 @@
 #include <mln/map/mode.hpp>
 #include <mln/map/transform_state.hpp>
 #include <mln/style/light.hpp>
+#include <mln/style/projection.hpp>
+#include <mln/style/terrain.hpp>
 #include <mln/style/image.hpp>
 #include <mln/style/source.hpp>
 #include <mln/style/layer.hpp>
@@ -11,6 +13,7 @@
 #include <mln/util/immutable.hpp>
 
 #include <numbers>
+#include <optional>
 #include <vector>
 
 #include <mapbox/std/weak.hpp>
@@ -37,6 +40,9 @@ public:
     const Immutable<std::vector<Immutable<style::Image::Impl>>> images;
     const Immutable<std::vector<Immutable<style::Source::Impl>>> sources;
     const Immutable<std::vector<Immutable<style::Layer::Impl>>> layers;
+
+    const style::ProjectionDefinition projection;
+    const std::optional<style::Terrain> terrain;
 
     mapbox::base::WeakPtr<AnnotationManager> annotationManager;
     std::shared_ptr<FileSource> fileSource;

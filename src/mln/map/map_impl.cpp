@@ -113,6 +113,7 @@ void Map::Impl::onUpdate() {
     TimePoint timePoint = mode == MapMode::Continuous ? Clock::now() : Clock::time_point::max();
 
     transform.updateTransitions(timePoint);
+    transform.getMutableState().setProjection(style->impl->getProjection());
 
     UpdateParameters params = {.styleLoaded = style->impl->isLoaded(),
                                .mode = mode,
@@ -128,6 +129,8 @@ void Map::Impl::onUpdate() {
                                .images = style->impl->getImageImpls(),
                                .sources = style->impl->getSourceImpls(),
                                .layers = style->impl->getLayerImpls(),
+                               .projection = style->impl->getProjection(),
+                               .terrain = style->impl->getTerrain(),
                                .annotationManager = annotationManager.makeWeakPtr(),
                                .fileSource = fileSource,
                                .prefetchZoomDelta = prefetchZoomDelta,

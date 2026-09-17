@@ -508,5 +508,32 @@ const std::vector<TextureInfo> SymbolTextAndIconShaderInfo::textures = {
     TextureInfo{"u_texture_icon", idSymbolImageIconTexture},
 };
 
+// Terrain
+using TerrainShaderInfo = ShaderInfo<BuiltIn::TerrainShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> TerrainShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"TerrainDrawableUBO", idTerrainDrawableUBO},
+};
+const std::vector<AttributeInfo> TerrainShaderInfo::attributes = {
+    AttributeInfo{"a_pos3d", idTerrainPosVertexAttribute},
+};
+const std::vector<TextureInfo> TerrainShaderInfo::textures = {
+    TextureInfo{"u_terrain_image", idTerrainImageTexture},
+    TextureInfo{"u_terrain_dem", idTerrainDemTexture},
+};
+
+// Terrain Depth
+using TerrainDepthShaderInfo = ShaderInfo<BuiltIn::TerrainDepthShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> TerrainDepthShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"TerrainDepthDrawableUBO", idTerrainDepthDrawableUBO},
+};
+const std::vector<AttributeInfo> TerrainDepthShaderInfo::attributes = {
+    AttributeInfo{"a_pos3d", idTerrainDepthPosVertexAttribute},
+};
+const std::vector<TextureInfo> TerrainDepthShaderInfo::textures = {
+    TextureInfo{"u_terrain_dem", idTerrainDepthDemTexture},
+};
+
 } // namespace shaders
 } // namespace mln
