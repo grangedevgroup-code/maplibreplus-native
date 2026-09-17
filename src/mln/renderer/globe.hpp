@@ -16,7 +16,6 @@ namespace mln {
 
 class PaintParameters;
 class RenderOrchestrator;
-class RenderTerrain;
 class TransformState;
 
 namespace gfx {
