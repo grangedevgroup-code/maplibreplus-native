@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <set>
 
@@ -112,7 +113,7 @@ void RenderGlobe::update(gfx::ShaderRegistry& shaders,
         std::clamp(std::floor(state.getZoom()), 0.0, static_cast<double>(globeMaxZoom)));
     auto coveringTiles = util::globeTileCover(state, zoom, Range<uint8_t>{0, globeMaxZoom}, zoom);
     if (coveringTiles.size() > globeMaxTiles) {
-        coveringTiles.resize(globeMaxTiles);
+        coveringTiles.erase(coveringTiles.begin() + static_cast<std::ptrdiff_t>(globeMaxTiles), coveringTiles.end());
     }
 
     const std::set<OverscaledTileID> visible(coveringTiles.begin(), coveringTiles.end());

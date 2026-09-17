@@ -7,6 +7,7 @@
 #include <mln/gfx/vertex_vector.hpp>
 #include <mln/shaders/attributes.hpp>
 #include <mln/shaders/segment.hpp>
+#include <mln/util/geo.hpp>
 #include <mln/style/terrain.hpp>
 #include <mln/tile/tile_id.hpp>
 
