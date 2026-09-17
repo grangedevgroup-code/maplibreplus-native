@@ -284,24 +284,6 @@ private:
     // by |edgeInsets| in screen coordinates, with top left origin.
     ScreenCoordinate getCenterOffset() const;
 
-    LatLngBounds bounds;
-
-    // Limit the amount of zooming possible on the map.
-    double min_scale = std::pow(2, 0);
-    double max_scale = std::pow(2, util::DEFAULT_MAX_ZOOM);
-
-    // Limit the amount of pitch
-    double minPitch = util::PITCH_MIN;
-    double maxPitch = util::DEFAULT_PITCH_MAX;
-    double minFov = util::deg2rad(0.1);
-    double maxFov = util::deg2rad(150.0);
-
-    NorthOrientation orientation = NorthOrientation::Upwards;
-
-    // logical dimensions
-    Size size;
-    EdgeInsets frustumOffset;
-
     mat4 coordinatePointMatrix(const mat4& projMatrix) const;
     mat4 getPixelMatrix() const;
 
@@ -320,14 +302,15 @@ private:
     const mat4& getInvertedMatrix() const;
 
 private:
-    ConstrainMode constrainMode;
-    ViewportMode viewportMode;
+    // Limit the amount of zooming possible on the map.
+    double min_scale = std::pow(2, 0);
+    double max_scale = std::pow(2, util::DEFAULT_MAX_ZOOM);
 
-    // animation state
-    bool rotating = false;
-    bool scaling = false;
-    bool panning = false;
-    bool gestureInProgress = false;
+    // Limit the amount of pitch
+    double minPitch = util::PITCH_MIN;
+    double maxPitch = util::DEFAULT_PITCH_MAX;
+    double minFov = util::deg2rad(0.1);
+    double maxFov = util::deg2rad(150.0);
 
     // map position
     double x = 0, y = 0, z = 0;
@@ -338,26 +321,49 @@ private:
     double roll = 0.0;
     double xSkew = 0.0;
     double ySkew = 1.0;
-    bool axonometric = false;
-
-    EdgeInsets edgeInsets;
-    style::ProjectionDefinition projection;
-    mutable util::Camera camera;
 
     // cache values for spherical mercator math
     double Bc = Projection::worldSize(scale) / util::DEGREES_MAX;
     double Cc = Projection::worldSize(scale) / util::M2PI;
 
-    mutable bool requestMatricesUpdate{true};
+    mutable double globeRadiusPixels = 0;
+    mutable vec3 globeCameraPosition;
+
+    EdgeInsets frustumOffset;
+    EdgeInsets edgeInsets;
+
+    mutable vec4 globeClippingPlane;
+
+    LatLngBounds bounds;
+
     mutable mat4 projectionMatrix;
     mutable mat4 invProjectionMatrix;
     mutable mat4 coordMatrix;
     mutable mat4 invertedMatrix;
     mutable mat4 globeMatrix;
     mutable mat4 invGlobeMatrix;
-    mutable vec4 globeClippingPlane;
-    mutable vec3 globeCameraPosition;
-    mutable double globeRadiusPixels = 0;
+
+    mutable util::Camera camera;
+
+    ConstrainMode constrainMode;
+    ViewportMode viewportMode;
+
+    // logical dimensions
+    Size size;
+
+    NorthOrientation orientation = NorthOrientation::Upwards;
+
+    // animation state
+    bool rotating = false;
+    bool scaling = false;
+    bool panning = false;
+    bool gestureInProgress = false;
+
+    bool axonometric = false;
+
+    style::ProjectionDefinition projection;
+
+    mutable bool requestMatricesUpdate{true};
 };
 
 } // namespace mln
