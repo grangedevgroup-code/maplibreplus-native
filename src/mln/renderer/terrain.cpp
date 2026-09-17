@@ -242,7 +242,7 @@ void RenderTerrain::update(gfx::ShaderRegistry& shaders,
 
         auto targetIt = renderTargets.find(tileID);
         if (targetIt == renderTargets.end()) {
-            auto renderTarget = std::make_shared<TerrainRenderTarget>(context,
+            auto renderTarget = std::make_shared<TileRenderTarget>(context,
                                                                      Size{terrainTextureSize, terrainTextureSize},
                                                                      gfx::TextureChannelDataType::UnsignedByte,
                                                                      tileID.toUnwrapped());

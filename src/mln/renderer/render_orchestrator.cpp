@@ -976,6 +976,24 @@ void RenderOrchestrator::updateTerrain(gfx::ShaderRegistry& shaders,
     terrain->update(shaders, context, state, demSource, changes);
 }
 
+void RenderOrchestrator::updateGlobe(gfx::ShaderRegistry& shaders,
+                                     gfx::Context& context,
+                                     const TransformState& state,
+                                     UniqueChangeRequestVec& changes) {
+    if (!state.isGlobeRendering()) {
+        if (globe) {
+            globe->teardown(changes);
+            globe.reset();
+        }
+        return;
+    }
+
+    if (!globe) {
+        globe = std::make_unique<RenderGlobe>();
+    }
+    globe->update(shaders, context, state, changes);
+}
+
 void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
                                       gfx::Context& context,
                                       const TransformState& state,
@@ -1017,6 +1035,12 @@ void RenderOrchestrator::updateLayers(gfx::ShaderRegistry& shaders,
 
     try {
         updateTerrain(shaders, context, state, updateParameters, changes);
+    } catch (...) {
+        observer->onRenderError(std::current_exception());
+    }
+
+    try {
+        updateGlobe(shaders, context, state, changes);
     } catch (...) {
         observer->onRenderError(std::current_exception());
     }

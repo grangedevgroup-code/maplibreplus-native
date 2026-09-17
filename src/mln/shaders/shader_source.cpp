@@ -40,6 +40,7 @@ MBGL_DEFINE_ENUM(BuiltIn,
                   {BuiltIn::SymbolIconShader, "SymbolIconShader"},
                   {BuiltIn::SymbolSDFShader, "SymbolSDFShader"},
                   {BuiltIn::SymbolTextAndIconShader, "SymbolTextAndIconShader"},
+                  {BuiltIn::GlobeShader, "GlobeShader"},
                   {BuiltIn::TerrainShader, "TerrainShader"},
                   {BuiltIn::TerrainDepthShader, "TerrainDepthShader"},
                   {BuiltIn::WideVectorShader, "WideVectorShader"}});

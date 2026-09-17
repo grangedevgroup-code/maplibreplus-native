@@ -6,10 +6,10 @@
 
 namespace mln {
 
-class TerrainRenderTarget final : public RenderTarget {
+class TileRenderTarget final : public RenderTarget {
 public:
-    TerrainRenderTarget(gfx::Context& context, Size size, gfx::TextureChannelDataType type, UnwrappedTileID tileID);
-    ~TerrainRenderTarget() override;
+    TileRenderTarget(gfx::Context& context, Size size, gfx::TextureChannelDataType type, UnwrappedTileID tileID);
+    ~TileRenderTarget() override;
 
     const UnwrappedTileID& getTileID() const { return tileID; }
 
@@ -22,6 +22,6 @@ private:
     UnwrappedTileID tileID;
 };
 
-using TerrainRenderTargetPtr = std::shared_ptr<TerrainRenderTarget>;
+using TileRenderTargetPtr = std::shared_ptr<TileRenderTarget>;
 
 } // namespace mln

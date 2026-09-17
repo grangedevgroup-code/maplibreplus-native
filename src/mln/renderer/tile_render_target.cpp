@@ -1,4 +1,4 @@
-#include <mln/renderer/terrain_render_target.hpp>
+#include <mln/renderer/tile_render_target.hpp>
 
 #include <mln/gfx/context.hpp>
 #include <mln/gfx/offscreen_texture.hpp>
@@ -17,18 +17,18 @@ namespace {
 constexpr double terrainDepthRange = 1.0e6;
 } // namespace
 
-TerrainRenderTarget::TerrainRenderTarget(gfx::Context& context_,
+TileRenderTarget::TileRenderTarget(gfx::Context& context_,
                                          Size size,
                                          gfx::TextureChannelDataType type,
                                          UnwrappedTileID tileID_)
     : RenderTarget(context_, size, type),
       tileID(tileID_) {}
 
-TerrainRenderTarget::~TerrainRenderTarget() = default;
+TileRenderTarget::~TileRenderTarget() = default;
 
-void TerrainRenderTarget::upload(gfx::UploadPass&) {}
+void TileRenderTarget::upload(gfx::UploadPass&) {}
 
-mat4 TerrainRenderTarget::tileProjMatrix(const PaintParameters& parameters) const {
+mat4 TileRenderTarget::tileProjMatrix(const PaintParameters& parameters) const {
     const auto& state = parameters.state;
     const double tileScale = static_cast<double>(1ull << tileID.canonical.z);
     const double tileSize = Projection::worldSize(state.getScale()) / tileScale;
@@ -41,7 +41,7 @@ mat4 TerrainRenderTarget::tileProjMatrix(const PaintParameters& parameters) cons
     return matrix;
 }
 
-void TerrainRenderTarget::render(RenderOrchestrator& orchestrator,
+void TileRenderTarget::render(RenderOrchestrator& orchestrator,
                                  const RenderTree& renderTree,
                                  PaintParameters& parameters) {
     const mat4 projMatrix = tileProjMatrix(parameters);

@@ -298,6 +298,10 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
             terrain->upload(*uploadPass);
         }
 
+        if (auto* globe = orchestrator.getGlobe()) {
+            globe->upload(*uploadPass);
+        }
+
         // Upload the Debug layer group
         orchestrator.visitDebugLayerGroups([&](LayerGroupBase& layerGroup) { layerGroup.upload(*uploadPass); });
     }
@@ -446,6 +450,16 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         common3DPass();
         drawable3DPass();
     }
+    const auto drawableGlobePass = [&] {
+        const auto debugGroup(parameters.renderPass->createDebugGroup("drawables-globe"));
+        auto* globe = orchestrator.getGlobe();
+        parameters.pass = RenderPass::Opaque;
+        parameters.depthRangeSize = 1 - 3 * PaintParameters::numSublayers * PaintParameters::depthEpsilon;
+        parameters.currentLayer = 0;
+        globe->updateUniforms(parameters);
+        globe->render(orchestrator, parameters);
+    };
+
     const auto drawableTerrainPass = [&] {
         const auto debugGroup(parameters.renderPass->createDebugGroup("drawables-terrain"));
         auto* terrain = orchestrator.getTerrain();
@@ -459,7 +473,9 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
     drawableTargetsPass();
     commonClearPass();
     context.bindGlobalUniformBuffers(*parameters.renderPass);
-    if (orchestrator.hasTerrain()) {
+    if (orchestrator.hasGlobe()) {
+        drawableGlobePass();
+    } else if (orchestrator.hasTerrain()) {
         drawableTerrainPass();
     } else {
         drawableOpaquePass();

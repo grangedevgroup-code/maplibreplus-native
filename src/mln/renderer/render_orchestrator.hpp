@@ -15,6 +15,7 @@
 #include <mln/renderer/image_manager_observer.hpp>
 #include <mln/text/placement.hpp>
 #include <mln/renderer/render_tree.hpp>
+#include <mln/renderer/globe.hpp>
 #include <mln/renderer/terrain.hpp>
 
 #include <map>
@@ -154,6 +155,9 @@ public:
         }
     }
 
+    RenderGlobe* getGlobe() const { return globe.get(); }
+    bool hasGlobe() const { return globe && globe->isRenderable(); }
+
     RenderTerrain* getTerrain() const { return terrain.get(); }
     bool hasTerrain() const { return terrain && terrain->isRenderable(); }
 
@@ -181,6 +185,8 @@ private:
                        const TransformState&,
                        const std::shared_ptr<UpdateParameters>&,
                        UniqueChangeRequestVec& changes);
+
+    void updateGlobe(gfx::ShaderRegistry&, gfx::Context&, const TransformState&, UniqueChangeRequestVec& changes);
 
     RenderLayer* getRenderLayer(const std::string& id);
     const RenderLayer* getRenderLayer(const std::string& id) const;
@@ -256,6 +262,7 @@ private:
 
     std::vector<RenderTargetPtr> renderTargets;
     std::unique_ptr<RenderTerrain> terrain;
+    std::unique_ptr<RenderGlobe> globe;
     RenderItem::DebugLayerGroupMap debugLayerGroups;
 };
 

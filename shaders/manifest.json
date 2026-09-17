@@ -222,6 +222,13 @@
         "uses_ubos": true
     },
     {
+        "name": "GlobeShader",
+        "header": "globe",
+        "glsl_vert": "globe.vertex.glsl",
+        "glsl_frag": "globe.fragment.glsl",
+        "uses_ubos": true
+    },
+    {
         "name": "TerrainShader",
         "header": "terrain",
         "glsl_vert": "terrain.vertex.glsl",

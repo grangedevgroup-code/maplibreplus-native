@@ -2,7 +2,7 @@
 
 #include <mln/renderer/change_request.hpp>
 #include <mln/renderer/layer_group.hpp>
-#include <mln/renderer/terrain_render_target.hpp>
+#include <mln/renderer/tile_render_target.hpp>
 #include <mln/gfx/index_vector.hpp>
 #include <mln/gfx/vertex_vector.hpp>
 #include <mln/shaders/attributes.hpp>
@@ -74,7 +74,7 @@ private:
     std::shared_ptr<TerrainIndexVector> sharedIndices;
     SegmentVector segments;
 
-    std::map<OverscaledTileID, TerrainRenderTargetPtr> renderTargets;
+    std::map<OverscaledTileID, TileRenderTargetPtr> renderTargets;
     std::map<OverscaledTileID, std::shared_ptr<const DEMData>> demByTile;
 
     double minElevation = 0;

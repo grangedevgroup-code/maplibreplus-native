@@ -43,6 +43,11 @@ struct TileCoverParameters {
 
 int32_t coveringZoomLevel(double z, style::SourceType type, uint16_t tileSize) noexcept;
 
+std::vector<OverscaledTileID> globeTileCover(const TransformState& transformState,
+                                             uint8_t z,
+                                             const Range<uint8_t>& zoomRange,
+                                             uint8_t overscaledZ);
+
 std::vector<OverscaledTileID> tileCover(const TileCoverParameters& state,
                                         uint8_t z,
                                         const Range<uint8_t> zoomRange,

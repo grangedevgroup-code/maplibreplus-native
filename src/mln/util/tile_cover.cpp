@@ -1,11 +1,14 @@
+#include <mln/math/clamp.hpp>
 #include <mln/math/log2.hpp>
 #include <mln/util/bounding_volumes.hpp>
+#include <mln/util/globe.hpp>
 #include <mln/util/constants.hpp>
 #include <mln/util/interpolate.hpp>
 #include <mln/util/tile_coordinate.hpp>
 #include <mln/util/tile_cover.hpp>
 #include <mln/util/tile_cover_impl.hpp>
 
+#include <cmath>
 #include <functional>
 #include <list>
 
@@ -155,10 +158,94 @@ int32_t coveringZoomLevel(double zoom, style::SourceType type, uint16_t size) no
     }
 }
 
+namespace {
+
+bool globeTileVisible(const TransformState& transformState, uint8_t zoom, uint32_t x, uint32_t y) {
+    namespace globe = mln::util::globe;
+
+    const vec4& plane = transformState.getGlobeClippingPlane();
+    const mat4& matrix = transformState.getGlobeMatrix();
+    const Size size = transformState.getSize();
+
+    bool anyInFront = false;
+    bool anyInside = false;
+    bool allLeft = true, allRight = true, allAbove = true, allBelow = true;
+
+    for (int32_t sy = 0; sy <= 2; sy++) {
+        for (int32_t sx = 0; sx <= 2; sx++) {
+            const double inTileX = sx * util::EXTENT * 0.5;
+            const double inTileY = sy * util::EXTENT * 0.5;
+            const vec3 spherePos = globe::projectTileCoordinatesToSphere(
+                inTileX, inTileY, static_cast<int32_t>(x), static_cast<int32_t>(y), zoom);
+
+            if (globe::pointPlaneSignedDistance(plane, spherePos) >= 0.0) {
+                anyInFront = true;
+            }
+
+            vec4 projected;
+            matrix::transformMat4(projected, vec4{spherePos[0], spherePos[1], spherePos[2], 1.0}, matrix);
+            if (projected[3] <= 0.0) {
+                allLeft = allRight = allAbove = allBelow = false;
+                continue;
+            }
+            const double ndcX = projected[0] / projected[3];
+            const double ndcY = projected[1] / projected[3];
+            allLeft = allLeft && ndcX < -1.0;
+            allRight = allRight && ndcX > 1.0;
+            allBelow = allBelow && ndcY < -1.0;
+            allAbove = allAbove && ndcY > 1.0;
+            if (std::abs(ndcX) <= 1.0 && std::abs(ndcY) <= 1.0) {
+                anyInside = true;
+            }
+        }
+    }
+
+    if (size.isEmpty() || !anyInFront) {
+        return false;
+    }
+    if (zoom < 3) {
+        return true;
+    }
+    if (anyInside) {
+        return true;
+    }
+    return !(allLeft || allRight || allAbove || allBelow);
+}
+
+} // namespace
+
+std::vector<OverscaledTileID> globeTileCover(const TransformState& transformState,
+                                             uint8_t z,
+                                             const Range<uint8_t>& zoomRange,
+                                             uint8_t overscaledZ) {
+    std::vector<OverscaledTileID> result;
+    const uint8_t targetZ = util::clamp<uint8_t>(z, zoomRange.min, zoomRange.max);
+
+    std::function<void(uint8_t, uint32_t, uint32_t)> visit = [&](uint8_t zoom, uint32_t x, uint32_t y) {
+        if (!globeTileVisible(transformState, zoom, x, y)) {
+            return;
+        }
+        if (zoom == targetZ) {
+            result.emplace_back(overscaledZ, 0, zoom, x, y);
+            return;
+        }
+        for (uint32_t i = 0; i < 4; i++) {
+            visit(static_cast<uint8_t>(zoom + 1), (x << 1) + (i % 2), (y << 1) + (i >> 1));
+        }
+    };
+
+    visit(0, 0, 0);
+    return result;
+}
+
 std::vector<OverscaledTileID> tileCover(const TileCoverParameters& state,
                                         uint8_t z,
                                         const Range<uint8_t> zoomRange,
                                         const std::optional<uint8_t>& overscaledZ) {
+    if (state.transformState.isGlobeRendering()) {
+        return globeTileCover(state.transformState, z, zoomRange, overscaledZ.value_or(z));
+    }
+
     struct Node {
         AABB aabb;
         uint8_t zoom;

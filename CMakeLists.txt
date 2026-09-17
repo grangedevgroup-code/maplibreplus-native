@@ -181,10 +181,12 @@ list(APPEND SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/uniform_buffer.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/gfx/vertex_attribute.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/render_target.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/globe.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/globe.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain.hpp
-    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain_render_target.cpp
-    ${PROJECT_SOURCE_DIR}/src/mln/renderer/terrain_render_target.hpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/tile_render_target.cpp
+    ${PROJECT_SOURCE_DIR}/src/mln/renderer/tile_render_target.hpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/change_request.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/layer_group.cpp
     ${PROJECT_SOURCE_DIR}/src/mln/renderer/tile_layer_group.cpp

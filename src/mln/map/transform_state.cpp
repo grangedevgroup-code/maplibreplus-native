@@ -934,6 +934,10 @@ double TransformState::scaleZoom(double s) const {
 }
 
 ScreenCoordinate TransformState::latLngToScreenCoordinate(const LatLng& latLng) const {
+    if (isGlobeRendering() && !size.isEmpty()) {
+        bool occluded = false;
+        return latLngToScreenCoordinateGlobe(latLng, occluded);
+    }
     vec4 p;
     return latLngToScreenCoordinate(latLng, p);
 }
@@ -984,6 +988,11 @@ TileCoordinate TransformState::screenCoordinateToTileCoordinate(const ScreenCoor
 }
 
 LatLng TransformState::screenCoordinateToLatLng(const ScreenCoordinate& point, LatLng::WrapMode wrapMode) const {
+    if (isGlobeRendering() && !size.isEmpty()) {
+        if (const auto globeLatLng = screenCoordinateToLatLngGlobe(point)) {
+            return {globeLatLng->latitude(), globeLatLng->longitude(), wrapMode};
+        }
+    }
     auto coord = screenCoordinateToTileCoordinate(point, 0);
     return Projection::unproject(coord.p, 1. / util::tileSize_D, wrapMode);
 }

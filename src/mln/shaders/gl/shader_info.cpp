@@ -508,6 +508,19 @@ const std::vector<TextureInfo> SymbolTextAndIconShaderInfo::textures = {
     TextureInfo{"u_texture_icon", idSymbolImageIconTexture},
 };
 
+// Globe
+using GlobeShaderInfo = ShaderInfo<BuiltIn::GlobeShader, gfx::Backend::Type::OpenGL>;
+
+const std::vector<UniformBlockInfo> GlobeShaderInfo::uniformBlocks = {
+    UniformBlockInfo{"GlobeDrawableUBO", idGlobeDrawableUBO},
+};
+const std::vector<AttributeInfo> GlobeShaderInfo::attributes = {
+    AttributeInfo{"a_pos", idGlobePosVertexAttribute},
+};
+const std::vector<TextureInfo> GlobeShaderInfo::textures = {
+    TextureInfo{"u_globe_image", idGlobeImageTexture},
+};
+
 // Terrain
 using TerrainShaderInfo = ShaderInfo<BuiltIn::TerrainShader, gfx::Backend::Type::OpenGL>;
 
