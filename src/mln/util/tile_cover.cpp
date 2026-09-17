@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <list>
 
 using namespace std::numbers;
@@ -160,16 +161,31 @@ int32_t coveringZoomLevel(double zoom, style::SourceType type, uint16_t size) no
 
 namespace {
 
-bool globeTileVisible(const TransformState& transformState, uint8_t zoom, uint32_t x, uint32_t y) {
+constexpr double globeTilePixelTarget = 512.0;
+
+struct GlobeTileSample {
+    bool visible;
+    double screenSize;
+};
+
+GlobeTileSample sampleGlobeTile(const TransformState& transformState, uint8_t zoom, uint32_t x, uint32_t y) {
     namespace globe = mln::util::globe;
 
     const vec4& plane = transformState.getGlobeClippingPlane();
     const mat4& matrix = transformState.getGlobeMatrix();
     const Size size = transformState.getSize();
+    const double halfWidth = size.width * 0.5;
+    const double halfHeight = size.height * 0.5;
 
     bool anyInFront = false;
     bool anyInside = false;
+    bool anyBehindCamera = false;
     bool allLeft = true, allRight = true, allAbove = true, allBelow = true;
+
+    double minX = std::numeric_limits<double>::max();
+    double maxX = std::numeric_limits<double>::lowest();
+    double minY = std::numeric_limits<double>::max();
+    double maxY = std::numeric_limits<double>::lowest();
 
     for (int32_t sy = 0; sy <= 2; sy++) {
         for (int32_t sx = 0; sx <= 2; sx++) {
@@ -185,9 +201,10 @@ bool globeTileVisible(const TransformState& transformState, uint8_t zoom, uint32
             vec4 projected;
             matrix::transformMat4(projected, vec4{spherePos[0], spherePos[1], spherePos[2], 1.0}, matrix);
             if (projected[3] <= 0.0) {
-                allLeft = allRight = allAbove = allBelow = false;
+                anyBehindCamera = true;
                 continue;
             }
+
             const double ndcX = projected[0] / projected[3];
             const double ndcY = projected[1] / projected[3];
             allLeft = allLeft && ndcX < -1.0;
@@ -197,19 +214,30 @@ bool globeTileVisible(const TransformState& transformState, uint8_t zoom, uint32
             if (std::abs(ndcX) <= 1.0 && std::abs(ndcY) <= 1.0) {
                 anyInside = true;
             }
+
+            const double px = ndcX * halfWidth;
+            const double py = ndcY * halfHeight;
+            minX = std::min(minX, px);
+            maxX = std::max(maxX, px);
+            minY = std::min(minY, py);
+            maxY = std::max(maxY, py);
         }
     }
 
     if (size.isEmpty() || !anyInFront) {
-        return false;
+        return {.visible = false, .screenSize = 0.0};
     }
-    if (zoom < 3) {
-        return true;
+
+    if (anyBehindCamera || minX > maxX) {
+        return {.visible = true, .screenSize = std::numeric_limits<double>::max()};
     }
-    if (anyInside) {
-        return true;
+
+    const bool offscreen = !anyInside && (allLeft || allRight || allAbove || allBelow);
+    if (offscreen) {
+        return {.visible = false, .screenSize = 0.0};
     }
-    return !(allLeft || allRight || allAbove || allBelow);
+
+    return {.visible = true, .screenSize = std::max(maxX - minX, maxY - minY)};
 }
 
 } // namespace
@@ -222,11 +250,16 @@ std::vector<OverscaledTileID> globeTileCover(const TransformState& transformStat
     const uint8_t targetZ = util::clamp<uint8_t>(z, zoomRange.min, zoomRange.max);
 
     std::function<void(uint8_t, uint32_t, uint32_t)> visit = [&](uint8_t zoom, uint32_t x, uint32_t y) {
-        if (!globeTileVisible(transformState, zoom, x, y)) {
+        const GlobeTileSample sample = sampleGlobeTile(transformState, zoom, x, y);
+        if (!sample.visible) {
             return;
         }
-        if (zoom == targetZ) {
+        if (zoom >= targetZ) {
             result.emplace_back(overscaledZ, 0, zoom, x, y);
+            return;
+        }
+        if (zoom >= zoomRange.min && sample.screenSize <= globeTilePixelTarget) {
+            result.emplace_back(zoom, 0, zoom, x, y);
             return;
         }
         for (uint32_t i = 0; i < 4; i++) {

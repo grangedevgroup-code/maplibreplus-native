@@ -14,13 +14,13 @@
 namespace mln {
 
 namespace {
-constexpr double terrainDepthRange = 1.0e6;
+constexpr double tileDepthRange = 1.0e6;
 } // namespace
 
 TileRenderTarget::TileRenderTarget(gfx::Context& context_,
-                                         Size size,
-                                         gfx::TextureChannelDataType type,
-                                         UnwrappedTileID tileID_)
+                                   Size size,
+                                   gfx::TextureChannelDataType type,
+                                   UnwrappedTileID tileID_)
     : RenderTarget(context_, size, type),
       tileID(tileID_) {}
 
@@ -37,16 +37,16 @@ mat4 TileRenderTarget::tileProjMatrix(const PaintParameters& parameters) const {
     const double y0 = static_cast<double>(tileID.canonical.y) * tileSize;
 
     mat4 matrix;
-    matrix::ortho(matrix, x0, x0 + tileSize, y0 + tileSize, y0, -terrainDepthRange, terrainDepthRange);
+    matrix::ortho(matrix, x0, x0 + tileSize, y0 + tileSize, y0, -tileDepthRange, tileDepthRange);
     return matrix;
 }
 
 void TileRenderTarget::render(RenderOrchestrator& orchestrator,
-                                 const RenderTree& renderTree,
-                                 PaintParameters& parameters) {
+                              const RenderTree& renderTree,
+                              PaintParameters& parameters) {
     const mat4 projMatrix = tileProjMatrix(parameters);
 
-    parameters.renderPass = parameters.encoder->createRenderPass("terrain tile",
+    parameters.renderPass = parameters.encoder->createRenderPass("tile render target",
                                                                  {.renderable = *offscreenTexture,
                                                                   .clearColor = Color{0.0f, 0.0f, 0.0f, 0.0f},
                                                                   .clearDepth = {},

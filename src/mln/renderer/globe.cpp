@@ -29,8 +29,9 @@ using namespace shaders;
 namespace {
 
 constexpr int32_t globeMeshSize = 32;
-constexpr uint16_t globeTextureSize = util::tileSize_I * 2;
+constexpr uint16_t globeTextureSize = util::tileSize_I;
 constexpr uint8_t globeMaxZoom = 12;
+constexpr std::size_t globeMaxTiles = 128;
 constexpr auto globeShaderGroupName = "GlobeShader";
 
 } // namespace
@@ -109,9 +110,12 @@ void RenderGlobe::update(gfx::ShaderRegistry& shaders,
 
     const auto zoom = static_cast<uint8_t>(
         std::clamp(std::floor(state.getZoom()), 0.0, static_cast<double>(globeMaxZoom)));
-    const auto coveringTiles = util::globeTileCover(state, zoom, Range<uint8_t>{0, globeMaxZoom}, zoom);
+    auto coveringTiles = util::globeTileCover(state, zoom, Range<uint8_t>{0, globeMaxZoom}, zoom);
+    if (coveringTiles.size() > globeMaxTiles) {
+        coveringTiles.resize(globeMaxTiles);
+    }
 
-    std::set<OverscaledTileID> visible(coveringTiles.begin(), coveringTiles.end());
+    const std::set<OverscaledTileID> visible(coveringTiles.begin(), coveringTiles.end());
 
     tileLayerGroup->removeDrawablesIf([&](gfx::Drawable& drawable) {
         return !drawable.getTileID() || !visible.contains(*drawable.getTileID());
