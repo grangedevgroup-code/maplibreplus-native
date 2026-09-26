@@ -4,6 +4,7 @@
 #include <mln/util/globe.hpp>
 #include <mln/util/constants.hpp>
 #include <mln/util/interpolate.hpp>
+#include <mln/util/mat4.hpp>
 #include <mln/util/tile_coordinate.hpp>
 #include <mln/util/tile_cover.hpp>
 #include <mln/util/tile_cover_impl.hpp>
@@ -12,6 +13,7 @@
 #include <functional>
 #include <limits>
 #include <list>
+#include <numbers>
 
 using namespace std::numbers;
 
@@ -328,15 +330,25 @@ std::vector<OverscaledTileID> tileCover(const TileCoverParameters& state,
     const vec3 cameraCoord = vec3Scale(cameraPositionMercator, nominalScale);
     const double cameraToCenterDistanceMercator = vec3Length(vec3Sub(cameraCoord, centerCoord)) / worldSize;
 
-    const Frustum frustum = Frustum::fromInvProjMatrix(transform.getInvProjectionMatrix(), worldSize, z, flippedY);
+    const double cameraLatitude = std::atan(std::sinh(std::numbers::pi * (1.0 - 2.0 * cameraPositionMercator[1])));
+    const double pixelsPerMeter = worldSize / (std::cos(cameraLatitude) * util::M2PI * util::EARTH_RADIUS_M);
+    mat4 metersToPixels = matrix::identity4();
+    matrix::scale(metersToPixels, metersToPixels, 1.0, 1.0, pixelsPerMeter);
+    mat4 invProj;
+    matrix::multiply(invProj, metersToPixels, transform.getInvProjectionMatrix());
+    const Frustum frustum = Frustum::fromInvProjMatrix(invProj, worldSize, z, flippedY);
 
     // There should always be a certain number of maximum zoom level tiles
     // surrounding the center location
     assert(state.tileLodMinRadius >= 1);
     const double radiusOfMaxLvlLodInTiles = std::max(1.0, state.tileLodMinRadius);
 
+    const double elevationToTile = pixelsPerMeter * numTiles / worldSize;
+    const double minTileZ = std::min(0.0, state.minElevation * elevationToTile);
+    const double maxTileZ = std::max(0.0, state.maxElevation * elevationToTile);
+
     const auto newRootTile = [&](int16_t wrap) -> Node {
-        return {.aabb = AABB({{wrap * numTiles, 0.0, 0.0}}, {{(wrap + 1) * numTiles, numTiles, 0.0}}),
+        return {.aabb = AABB({{wrap * numTiles, 0.0, minTileZ}}, {{(wrap + 1) * numTiles, numTiles, maxTileZ}}),
                 .zoom = uint8_t(0),
                 .x = uint16_t(0),
                 .y = uint16_t(0),

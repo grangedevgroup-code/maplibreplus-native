@@ -26,6 +26,7 @@
 #include <mln/tile/tile.hpp>
 #include <mln/util/instrumentation.hpp>
 #include <mln/util/math.hpp>
+#include <mln/util/projection.hpp>
 #include <mln/util/string.hpp>
 #include <mln/util/logging.hpp>
 
@@ -186,9 +187,23 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
     PropertyEvaluationParameters evaluationParameters{zoomHistory, updateParameters->timePoint, transitionDuration};
     evaluationParameters.zoomChanged = zoomChanged;
 
+    transformState = updateParameters->transformState;
+    double terrainMinElevation = 0.0;
+    double terrainMaxElevation = 0.0;
+    if (terrain && updateParameters->terrain && updateParameters->terrain->valid()) {
+        const LatLng center = transformState.getLatLng();
+        const double metersPerPixel = Projection::getMetersPerPixelAtLatitude(center.latitude(),
+                                                                              transformState.getZoom());
+        if (metersPerPixel > 0.0) {
+            transformState.setZ(terrain->getElevation(center, transformState.getZoom()) / metersPerPixel);
+        }
+        terrainMinElevation = terrain->getMinElevation();
+        terrainMaxElevation = terrain->getMaxElevation();
+    }
+
     TileParameters tileParameters{.pixelRatio = updateParameters->pixelRatio,
                                   .debugOptions = updateParameters->debugOptions,
-                                  .transformState = updateParameters->transformState,
+                                  .transformState = transformState,
                                   .fileSource = updateParameters->fileSource,
                                   .mode = updateParameters->mode,
                                   .annotationManager = updateParameters->annotationManager,
@@ -201,7 +216,9 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
                                   .tileLodPitchThreshold = updateParameters->tileLodPitchThreshold,
                                   .tileLodZoomShift = updateParameters->tileLodZoomShift,
                                   .tileLodMode = updateParameters->tileLodMode,
-                                  .dynamicTextureAtlas = dynamicTextureAtlas};
+                                  .dynamicTextureAtlas = dynamicTextureAtlas,
+                                  .terrainMinElevation = terrainMinElevation,
+                                  .terrainMaxElevation = terrainMaxElevation};
 
     glyphManager->setURL(updateParameters->glyphURL);
     glyphManager->setFontFaces(updateParameters->fontFaces);
@@ -342,11 +359,10 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
         renderSource->setFastPFOREnabled(updateParameters->fastPFOREnabled);
         renderSources.emplace(entry.first, std::move(renderSource));
     }
-    transformState = updateParameters->transformState;
     const bool tiltedView = transformState.getPitch() != 0.0f;
 
     // Create parameters for the render tree.
-    auto renderTreeParameters = std::make_unique<RenderTreeParameters>(updateParameters->transformState,
+    auto renderTreeParameters = std::make_unique<RenderTreeParameters>(transformState,
                                                                        updateParameters->mode,
                                                                        updateParameters->debugOptions,
                                                                        updateParameters->timePoint,

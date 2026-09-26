@@ -40,6 +40,8 @@ public:
     TileLodMode tileLodMode = TileLodMode::Default;
     gfx::DynamicTextureAtlasPtr dynamicTextureAtlas;
     bool isUpdateSynchronous = false;
+    double terrainMinElevation = 0;
+    double terrainMaxElevation = 0;
 };
 
 } // namespace mln
