@@ -190,7 +190,9 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
     transformState = updateParameters->transformState;
     double terrainMinElevation = 0.0;
     double terrainMaxElevation = 0.0;
-    if (terrain && updateParameters->terrain && updateParameters->terrain->valid()) {
+    const bool terrainActive = updateParameters->terrain && updateParameters->terrain->valid() &&
+                               !transformState.isGlobeRendering();
+    if (terrain && terrainActive) {
         const LatLng center = transformState.getLatLng();
         const double metersPerPixel = Projection::getMetersPerPixelAtLatitude(center.latitude(),
                                                                               transformState.getZoom());
@@ -430,7 +432,7 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
                 updateList[index] = true;
             }
         }
-        if (updateParameters->terrain && updateParameters->terrain->getSource() == sourceImpl->id &&
+        if (terrainActive && updateParameters->terrain->getSource() == sourceImpl->id &&
             sourceImpl->type == style::SourceType::RasterDEM) {
             sourceNeedsRendering = true;
         }
@@ -983,7 +985,7 @@ void RenderOrchestrator::updateTerrain(gfx::ShaderRegistry& shaders,
                                        UniqueChangeRequestVec& changes) {
     const auto& options = updateParameters->terrain;
 
-    if (!options || !options->valid()) {
+    if (!options || !options->valid() || state.isGlobeRendering()) {
         if (terrain) {
             terrain->teardown(changes);
             terrain.reset();

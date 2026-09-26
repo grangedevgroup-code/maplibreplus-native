@@ -64,6 +64,9 @@ public:
     /// Get the type of layer group
     Type getType() const noexcept { return type; }
 
+    bool isScreenSpace() const noexcept { return screenSpace; }
+    void setScreenSpace(bool value) noexcept { screenSpace = value; }
+
     /// Get the name of the layer group
     const std::string& getName() const { return name; }
     /// Set the name of the layer group
@@ -113,6 +116,7 @@ public:
 
 protected:
     const Type type;
+    bool screenSpace = false;
     bool enabled = true;
     int32_t layerIndex;
     std::vector<LayerTweakerWeakPtr> layerTweakers;

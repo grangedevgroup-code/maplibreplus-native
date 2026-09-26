@@ -473,10 +473,28 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
     drawableTargetsPass();
     commonClearPass();
     context.bindGlobalUniformBuffers(*parameters.renderPass);
+    const auto drawableScreenSpacePass = [&] {
+        const auto debugGroup(parameters.renderPass->createDebugGroup("drawables-screen-space"));
+        parameters.pass = RenderPass::Translucent;
+        parameters.depthRangeSize = 1 - (orchestrator.numLayerGroups() + 2) * PaintParameters::numSublayers *
+                                            PaintParameters::depthEpsilon;
+        parameters.currentLayer = static_cast<uint32_t>(orchestrator.numLayerGroups()) - 1;
+        orchestrator.visitLayerGroups([&](LayerGroupBase& layerGroup) {
+            if (layerGroup.isScreenSpace()) {
+                layerGroup.render(orchestrator, parameters);
+            }
+            if (parameters.currentLayer > 0) {
+                parameters.currentLayer--;
+            }
+        });
+    };
+
     if (orchestrator.hasGlobe()) {
         drawableGlobePass();
+        drawableScreenSpacePass();
     } else if (orchestrator.hasTerrain()) {
         drawableTerrainPass();
+        drawableScreenSpacePass();
     } else {
         drawableOpaquePass();
         drawableTranslucentPass();

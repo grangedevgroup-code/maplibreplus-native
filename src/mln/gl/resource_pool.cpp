@@ -136,6 +136,9 @@ void Texture2DPool::release(TextureID id) {
 TextureID Texture2DPool::allocateGLMemory(const Texture2DDesc& desc) {
     MLN_TRACE_FUNC();
 
+    for (int pending = 0; pending < 16 && glGetError() != GL_NO_ERROR; ++pending) {
+    }
+
     // Create handle
     TextureID id = 0;
     MBGL_CHECK_ERROR(glGenTextures(1, &id));

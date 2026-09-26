@@ -61,6 +61,8 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
 
     const mat4* prevOverride = parameters.projMatrixOverride;
     parameters.projMatrixOverride = &projMatrix;
+    const UnwrappedTileID* prevTargetTile = parameters.renderTargetTile;
+    parameters.renderTargetTile = &tileID;
 
     parameters.context.bindGlobalUniformBuffers(*parameters.renderPass);
 
@@ -77,7 +79,9 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
                                         PaintParameters::depthEpsilon;
     parameters.currentLayer = 0;
     orchestrator.visitLayerGroupsReversed([&](LayerGroupBase& layerGroup) {
-        layerGroup.render(orchestrator, parameters);
+        if (!layerGroup.isScreenSpace()) {
+            layerGroup.render(orchestrator, parameters);
+        }
         parameters.currentLayer++;
     });
 
@@ -86,7 +90,9 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
                                         PaintParameters::depthEpsilon;
     parameters.currentLayer = layerGroupCount > 0 ? static_cast<uint32_t>(layerGroupCount) - 1 : 0;
     orchestrator.visitLayerGroups([&](LayerGroupBase& layerGroup) {
-        layerGroup.render(orchestrator, parameters);
+        if (!layerGroup.isScreenSpace()) {
+            layerGroup.render(orchestrator, parameters);
+        }
         if (parameters.currentLayer > 0) {
             parameters.currentLayer--;
         }
@@ -95,6 +101,7 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
     parameters.context.unbindGlobalUniformBuffers(*parameters.renderPass);
 
     parameters.projMatrixOverride = prevOverride;
+    parameters.renderTargetTile = prevTargetTile;
 
     parameters.renderPass.reset();
     parameters.encoder->present(*offscreenTexture);

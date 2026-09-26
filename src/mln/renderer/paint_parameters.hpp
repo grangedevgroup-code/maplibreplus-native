@@ -98,6 +98,7 @@ public:
     mat4 matrixForTile(const UnwrappedTileID&, bool aligned = false) const;
 
     const mat4* projMatrixOverride = nullptr;
+    const UnwrappedTileID* renderTargetTile = nullptr;
 
     // Stencil handling
 public:

@@ -488,14 +488,14 @@ ScreenCoordinate TransformState::latLngToScreenCoordinateGlobe(const LatLng& lat
     }
     const double ndcX = projected[0] / projected[3];
     const double ndcY = projected[1] / projected[3];
-    return {(ndcX * 0.5 + 0.5) * size.width, (1.0 - (ndcY * 0.5 + 0.5)) * size.height};
+    return {(ndcX * 0.5 + 0.5) * size.width, (ndcY * 0.5 + 0.5) * size.height};
 }
 
 vec3 TransformState::getRayDirectionFromPixel(const ScreenCoordinate& point) const {
     namespace globe = util::globe;
 
     const double ndcX = point.x / size.width * 2.0 - 1.0;
-    const double ndcY = 1.0 - point.y / size.height * 2.0;
+    const double ndcY = point.y / size.height * 2.0 - 1.0;
 
     vec4 nearPoint;
     vec4 farPoint;

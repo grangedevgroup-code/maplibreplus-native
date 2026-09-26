@@ -15,6 +15,7 @@
 #include <mln/shaders/shader_program_base.hpp>
 #include <mln/util/constants.hpp>
 #include <mln/util/convert.hpp>
+#include <mln/util/projection.hpp>
 #include <mln/util/tile_cover.hpp>
 
 #include <algorithm>
@@ -110,9 +111,19 @@ void RenderGlobe::update(gfx::ShaderRegistry& shaders,
     auto* tileLayerGroup = static_cast<TileLayerGroup*>(layerGroup.get());
 
     const auto zoom = static_cast<uint8_t>(
-        std::clamp(std::floor(state.getZoom()), 0.0, static_cast<double>(globeMaxZoom)));
+        std::clamp(std::floor(state.getZoom()) + 1.0, 0.0, static_cast<double>(globeMaxZoom)));
     auto coveringTiles = util::globeTileCover(state, zoom, Range<uint8_t>{0, globeMaxZoom}, zoom);
     if (coveringTiles.size() > globeMaxTiles) {
+        const Point<double> center = Projection::project(state.getLatLng(), 1.0) / util::tileSize_D;
+        const auto distance = [&](const OverscaledTileID& id) {
+            const double scale = static_cast<double>(1u << id.canonical.z);
+            const double dx = (id.canonical.x + 0.5) / scale - center.x;
+            const double dy = (id.canonical.y + 0.5) / scale - center.y;
+            return dx * dx + dy * dy;
+        };
+        std::ranges::sort(coveringTiles, [&](const OverscaledTileID& a, const OverscaledTileID& b) {
+            return distance(a) < distance(b);
+        });
         coveringTiles.erase(coveringTiles.begin() + static_cast<std::ptrdiff_t>(globeMaxTiles), coveringTiles.end());
     }
 

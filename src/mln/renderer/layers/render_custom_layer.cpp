@@ -112,6 +112,7 @@ void RenderCustomLayer::update([[maybe_unused]] gfx::ShaderRegistry& shaders,
     // create layer group
     if (!layerGroup) {
         if (auto layerGroup_ = context.createLayerGroup(layerIndex, /*initialCapacity=*/1, getID())) {
+            layerGroup_->setScreenSpace(true);
             setLayerGroup(std::move(layerGroup_), changes);
         }
     }

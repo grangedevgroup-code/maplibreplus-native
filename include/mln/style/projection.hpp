@@ -18,8 +18,8 @@ enum class ProjectionType : uint8_t {
 std::optional<ProjectionType> projectionTypeFromString(const std::string&);
 const char* projectionTypeToString(ProjectionType);
 
-constexpr double GLOBE_TRANSITION_START_ZOOM = 11.0;
-constexpr double GLOBE_TRANSITION_END_ZOOM = 12.0;
+constexpr double GLOBE_TRANSITION_START_ZOOM = 5.0;
+constexpr double GLOBE_TRANSITION_END_ZOOM = 6.0;
 
 class ProjectionDefinition {
 public:

@@ -107,9 +107,29 @@ void TileLayerGroupGL::render(RenderOrchestrator&, PaintParameters& parameters) 
     const auto debugGroupRender = parameters.encoder->createDebugGroup(label_render.c_str());
 #endif
 
+    const auto overlapsTarget = [&](const gfx::Drawable& drawable) {
+        const UnwrappedTileID* target = parameters.renderTargetTile;
+        const auto& tileID = drawable.getTileID();
+        if (target == nullptr || !tileID) {
+            return true;
+        }
+        const UnwrappedTileID tile = tileID->toUnwrapped();
+        if (tile.wrap != target->wrap) {
+            return false;
+        }
+        const CanonicalTileID& a = tile.canonical;
+        const CanonicalTileID& b = target->canonical;
+        if (a.z <= b.z) {
+            const uint8_t shift = b.z - a.z;
+            return (b.x >> shift) == a.x && (b.y >> shift) == a.y;
+        }
+        const uint8_t shift = a.z - b.z;
+        return (a.x >> shift) == b.x && (a.y >> shift) == b.y;
+    };
+
     bool bindUBOs = false;
     visitDrawables([&](gfx::Drawable& drawable) {
-        if (!drawable.getEnabled() || !drawable.hasRenderPass(parameters.pass)) {
+        if (!drawable.getEnabled() || !drawable.hasRenderPass(parameters.pass) || !overlapsTarget(drawable)) {
             return;
         }
 
@@ -181,9 +201,29 @@ void LayerGroupGL::render(RenderOrchestrator&, PaintParameters& parameters) {
         context.setStencilMode(gfx::StencilMode::disabled());
     }
 
+    const auto overlapsTarget = [&](const gfx::Drawable& drawable) {
+        const UnwrappedTileID* target = parameters.renderTargetTile;
+        const auto& tileID = drawable.getTileID();
+        if (target == nullptr || !tileID) {
+            return true;
+        }
+        const UnwrappedTileID tile = tileID->toUnwrapped();
+        if (tile.wrap != target->wrap) {
+            return false;
+        }
+        const CanonicalTileID& a = tile.canonical;
+        const CanonicalTileID& b = target->canonical;
+        if (a.z <= b.z) {
+            const uint8_t shift = b.z - a.z;
+            return (b.x >> shift) == a.x && (b.y >> shift) == a.y;
+        }
+        const uint8_t shift = a.z - b.z;
+        return (a.x >> shift) == b.x && (a.y >> shift) == b.y;
+    };
+
     bool bindUBOs = false;
     visitDrawables([&](gfx::Drawable& drawable) {
-        if (!drawable.getEnabled() || !drawable.hasRenderPass(parameters.pass)) {
+        if (!drawable.getEnabled() || !drawable.hasRenderPass(parameters.pass) || !overlapsTarget(drawable)) {
             return;
         }
 

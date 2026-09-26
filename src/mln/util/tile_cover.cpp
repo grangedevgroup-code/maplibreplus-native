@@ -163,8 +163,6 @@ int32_t coveringZoomLevel(double zoom, style::SourceType type, uint16_t size) no
 
 namespace {
 
-constexpr double globeTilePixelTarget = 512.0;
-
 struct GlobeTileSample {
     bool visible;
     double screenSize;
@@ -182,6 +180,7 @@ GlobeTileSample sampleGlobeTile(const TransformState& transformState, uint8_t zo
     bool anyInFront = false;
     bool anyInside = false;
     bool anyBehindCamera = false;
+    bool anyAheadOfCamera = false;
     bool allLeft = true, allRight = true, allAbove = true, allBelow = true;
 
     double minX = std::numeric_limits<double>::max();
@@ -189,48 +188,70 @@ GlobeTileSample sampleGlobeTile(const TransformState& transformState, uint8_t zo
     double minY = std::numeric_limits<double>::max();
     double maxY = std::numeric_limits<double>::lowest();
 
+    const double tileCount = static_cast<double>(1u << zoom);
+    const LatLng center = transformState.getLatLng();
+    const double centerMercatorX = (center.longitude() + 180.0) / 360.0 * tileCount;
+    const double centerLatitude = util::deg2rad(util::clamp(center.latitude(), -util::LATITUDE_MAX, util::LATITUDE_MAX));
+    const double centerMercatorY =
+        (1.0 - std::log(std::tan(centerLatitude) + 1.0 / std::cos(centerLatitude)) / std::numbers::pi) / 2.0 *
+        tileCount;
+    const bool containsCenter = centerMercatorX >= x && centerMercatorX <= x + 1.0 && centerMercatorY >= y &&
+                                centerMercatorY <= y + 1.0;
+    const double nearestX = (util::clamp(centerMercatorX, static_cast<double>(x), x + 1.0) - x) * util::EXTENT;
+    const double nearestY = (util::clamp(centerMercatorY, static_cast<double>(y), y + 1.0) - y) * util::EXTENT;
+
+    std::array<std::array<double, 2>, 10> samples;
     for (int32_t sy = 0; sy <= 2; sy++) {
         for (int32_t sx = 0; sx <= 2; sx++) {
-            const double inTileX = sx * util::EXTENT * 0.5;
-            const double inTileY = sy * util::EXTENT * 0.5;
-            const vec3 spherePos = globe::projectTileCoordinatesToSphere(
-                inTileX, inTileY, static_cast<int32_t>(x), static_cast<int32_t>(y), zoom);
-
-            if (globe::pointPlaneSignedDistance(plane, spherePos) >= 0.0) {
-                anyInFront = true;
-            }
-
-            vec4 projected;
-            matrix::transformMat4(projected, vec4{spherePos[0], spherePos[1], spherePos[2], 1.0}, matrix);
-            if (projected[3] <= 0.0) {
-                anyBehindCamera = true;
-                continue;
-            }
-
-            const double ndcX = projected[0] / projected[3];
-            const double ndcY = projected[1] / projected[3];
-            allLeft = allLeft && ndcX < -1.0;
-            allRight = allRight && ndcX > 1.0;
-            allBelow = allBelow && ndcY < -1.0;
-            allAbove = allAbove && ndcY > 1.0;
-            if (std::abs(ndcX) <= 1.0 && std::abs(ndcY) <= 1.0) {
-                anyInside = true;
-            }
-
-            const double px = ndcX * halfWidth;
-            const double py = ndcY * halfHeight;
-            minX = std::min(minX, px);
-            maxX = std::max(maxX, px);
-            minY = std::min(minY, py);
-            maxY = std::max(maxY, py);
+            samples[sy * 3 + sx] = {sx * util::EXTENT * 0.5, sy * util::EXTENT * 0.5};
         }
     }
+    samples[9] = {nearestX, nearestY};
 
-    if (size.isEmpty() || !anyInFront) {
+    for (const auto& [inTileX, inTileY] : samples) {
+        const vec3 spherePos = globe::projectTileCoordinatesToSphere(
+            inTileX, inTileY, static_cast<int32_t>(x), static_cast<int32_t>(y), zoom);
+
+        if (globe::pointPlaneSignedDistance(plane, spherePos) >= 0.0) {
+            anyInFront = true;
+        }
+
+        vec4 projected;
+        matrix::transformMat4(projected, vec4{spherePos[0], spherePos[1], spherePos[2], 1.0}, matrix);
+        if (projected[3] <= 0.0) {
+            anyBehindCamera = true;
+            continue;
+        }
+        anyAheadOfCamera = true;
+
+        const double ndcX = projected[0] / projected[3];
+        const double ndcY = projected[1] / projected[3];
+        allLeft = allLeft && ndcX < -1.0;
+        allRight = allRight && ndcX > 1.0;
+        allBelow = allBelow && ndcY < -1.0;
+        allAbove = allAbove && ndcY > 1.0;
+        if (std::abs(ndcX) <= 1.0 && std::abs(ndcY) <= 1.0) {
+            anyInside = true;
+        }
+
+        const double px = ndcX * halfWidth;
+        const double py = ndcY * halfHeight;
+        minX = std::min(minX, px);
+        maxX = std::max(maxX, px);
+        minY = std::min(minY, py);
+        maxY = std::max(maxY, py);
+    }
+
+    if (containsCenter) {
+        anyInFront = true;
+        anyInside = true;
+    }
+
+    if (size.isEmpty() || !anyInFront || (!anyAheadOfCamera && !containsCenter)) {
         return {.visible = false, .screenSize = 0.0};
     }
 
-    if (anyBehindCamera || minX > maxX) {
+    if (anyBehindCamera || minX > maxX || (containsCenter && zoom < 2)) {
         return {.visible = true, .screenSize = std::numeric_limits<double>::max()};
     }
 
@@ -250,6 +271,7 @@ std::vector<OverscaledTileID> globeTileCover(const TransformState& transformStat
                                              uint8_t overscaledZ) {
     std::vector<OverscaledTileID> result;
     const uint8_t targetZ = util::clamp<uint8_t>(z, zoomRange.min, zoomRange.max);
+    const double pixelTarget = Projection::worldSize(transformState.getScale()) / std::pow(2.0, targetZ);
 
     std::function<void(uint8_t, uint32_t, uint32_t)> visit = [&](uint8_t zoom, uint32_t x, uint32_t y) {
         const GlobeTileSample sample = sampleGlobeTile(transformState, zoom, x, y);
@@ -260,7 +282,7 @@ std::vector<OverscaledTileID> globeTileCover(const TransformState& transformStat
             result.emplace_back(overscaledZ, 0, zoom, x, y);
             return;
         }
-        if (zoom >= zoomRange.min && sample.screenSize <= globeTilePixelTarget) {
+        if (zoom >= zoomRange.min && sample.screenSize <= pixelTarget) {
             result.emplace_back(zoom, 0, zoom, x, y);
             return;
         }
