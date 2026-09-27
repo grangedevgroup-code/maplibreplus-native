@@ -533,7 +533,13 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
         symbolBucketsChanged |= renderTreeParameters->placementChanged;
         if (renderTreeParameters->placementChanged) {
             Mutable<Placement> placement = Placement::create(updateParameters, placementController.getPlacement());
+            if (hasTerrain() && !updateParameters->transformState.isGlobeRendering()) {
+                const double zoom = updateParameters->transformState.getZoom();
+                placement->setElevationProvider(
+                    [this, zoom](const LatLng& latLng) { return terrain->getElevation(latLng, zoom); });
+            }
             placement->placeLayers(layersNeedPlacement);
+            placement->setElevationProvider({});
             placementController.setPlacement(std::move(placement));
             crossTileSymbolIndex.pruneUnusedLayers(usedSymbolLayers);
             for (const auto& entry : renderSources) {

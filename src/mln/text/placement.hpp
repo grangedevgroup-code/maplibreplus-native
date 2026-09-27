@@ -130,6 +130,12 @@ public:
     virtual const std::vector<PlacedSymbolData>& getPlacedSymbolsData() const;
 
     const CollisionIndex& getCollisionIndex() const;
+    void setElevationProvider(std::function<double(const LatLng&)> provider) {
+        elevationProvider = std::move(provider);
+        if (!elevationProvider) {
+            collisionIndex.setElevation({});
+        }
+    }
     TimePoint getCommitTime() const { return commitTime; }
     Duration getUpdatePeriod(float zoom) const;
 
@@ -183,6 +189,8 @@ protected:
 
     std::shared_ptr<const UpdateParameters> updateParameters;
     CollisionIndex collisionIndex;
+    std::function<double(const LatLng&)> elevationProvider;
+    void useTileElevation(const RenderTile& tile);
 
     style::TransitionOptions transitionOptions;
 

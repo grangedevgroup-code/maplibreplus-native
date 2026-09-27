@@ -7,6 +7,7 @@
 #include <mln/map/transform_state.hpp>
 
 #include <array>
+#include <functional>
 
 namespace mln {
 
@@ -30,6 +31,8 @@ public:
     using CollisionGrid = GridIndex<IndexedSubfeature>;
 
     explicit CollisionIndex(const TransformState&, MapMode);
+
+    void setElevation(std::function<double(const Point<float>&)> sampler) { elevation = std::move(sampler); }
     IntersectStatus intersectsTileEdges(const CollisionBox&,
                                         Point<float> shift,
                                         const mat4& posMatrix,
@@ -67,6 +70,7 @@ public:
     float getViewportPadding() const { return viewportPadding; }
 
 private:
+    std::function<double(const Point<float>&)> elevation;
     bool isOffscreen(const CollisionBoundaries&) const;
     bool isInsideGrid(const CollisionBoundaries&) const;
     bool isInsideTile(const CollisionBoundaries& boundaries, const CollisionBoundaries& tileBoundaries) const;

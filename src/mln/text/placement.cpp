@@ -233,10 +233,25 @@ Point<float> calculateVariableLayoutOffset(style::SymbolAnchorType anchor,
 }
 } // namespace
 
+void Placement::useTileElevation(const RenderTile& tile) {
+    if (!elevationProvider) {
+        return;
+    }
+    const auto& id = tile.id;
+    const double tiles = static_cast<double>(1ull << id.canonical.z);
+    collisionIndex.setElevation([this, id, tiles](const Point<float>& point) {
+        const double x = (id.canonical.x + point.x / util::EXTENT) / tiles + id.wrap;
+        const double y = (id.canonical.y + point.y / util::EXTENT) / tiles;
+        const double lat = util::rad2deg(std::atan(std::sinh(M_PI * (1.0 - 2.0 * y))));
+        return elevationProvider(LatLng(lat, x * 360.0 - 180.0, LatLng::Unwrapped));
+    });
+}
+
 void Placement::placeSymbolBucket(const BucketPlacementData& params, std::set<uint32_t>& seenCrossTileIDs) {
     assert(updateParameters);
     const auto& symbolBucket = static_cast<const SymbolBucket&>(params.bucket.get());
     const RenderTile& renderTile = params.tile;
+    useTileElevation(renderTile);
     PlacementContext ctx{symbolBucket,
                          params.tile,
                          collisionIndex.getTransformState(),
