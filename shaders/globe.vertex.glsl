@@ -22,6 +22,14 @@ void main() {
     float sin_sy = (t2 - 1.0) / denom;
     float cos_sy = (2.0 * t) / denom;
 
+    if (a_pos.y < 0.5 && u_tile_mercator_coords.y < 1e-7) {
+        sin_sy = 1.0;
+        cos_sy = 0.0;
+    } else if (a_pos.y > 8191.5 && u_tile_mercator_coords.y + u_tile_mercator_coords.w * 8192.0 > 0.9999999) {
+        sin_sy = -1.0;
+        cos_sy = 0.0;
+    }
+
     vec3 sphere = vec3(
         sin(spherical_x) * cos_sy,
         sin_sy,
