@@ -163,7 +163,7 @@ using namespace shaders;
 
 void RenderCircleLayer::update(gfx::ShaderRegistry& shaders,
                                gfx::Context& context,
-                               const TransformState&,
+                               const TransformState& state,
                                const std::shared_ptr<UpdateParameters>&,
                                const PaintParameters&,
                                const RenderTree&,
@@ -180,6 +180,9 @@ void RenderCircleLayer::update(gfx::ShaderRegistry& shaders,
         } else {
             return;
         }
+    }
+    if (layerGroup) {
+        layerGroup->setScreenSpace(!state.isGlobeRendering());
     }
     auto* tileLayerGroup = static_cast<TileLayerGroup*>(layerGroup.get());
     if (!layerTweaker) {

@@ -20,9 +20,16 @@ struct alignas(16) CircleDrawableUBO {
     /* 100 */ float pad1;
     /* 104 */ float pad2;
     /* 108 */ float pad3;
-    /* 112 */
+
+    /* 112 */ std::array<float, 4 * 4> terrain_matrix;
+    /* 176 */ std::array<float, 4> terrain_unpack;
+    /* 192 */ float terrain_dim;
+    /* 196 */ float terrain_exaggeration;
+    /* 200 */ float terrain_elevation;
+    /* 204 */ float terrain_mode;
+    /* 208 */
 };
-static_assert(sizeof(CircleDrawableUBO) == 7 * 16);
+static_assert(sizeof(CircleDrawableUBO) == 13 * 16);
 
 /// Evaluated properties that do not depend on the tile
 struct alignas(16) CircleEvaluatedPropsUBO {

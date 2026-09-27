@@ -12,6 +12,7 @@
 #include <mln/renderer/paint_property_binder.hpp>
 #include <mln/renderer/layers/render_symbol_layer.hpp>
 #include <mln/renderer/render_tree.hpp>
+#include <mln/renderer/terrain.hpp>
 #include <mln/shaders/shader_program_base.hpp>
 #include <mln/shaders/symbol_layer_ubo.hpp>
 #include <mln/style/layers/symbol_layer_properties.hpp>
@@ -162,6 +163,12 @@ void SymbolLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
         // Unpitched point labels need to have their rotation applied after projection
         const bool rotateInShader = rotateWithMap && !pitchWithMap && !alongLine;
 
+        TerrainDemLookup dem;
+        if (parameters.terrain != nullptr && layerGroup.isScreenSpace()) {
+            dem = parameters.terrain->demFor(tileID);
+        }
+        drawable.setTexture(dem.texture, idSymbolTerrainDemTexture);
+
         const auto& sizeBinder = isText ? bucket->textSizeBinder : bucket->iconSizeBinder;
         const auto size = sizeBinder->evaluateForZoom(currentZoom);
 
@@ -192,6 +199,15 @@ void SymbolLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
             .opacity_t = getInterpFactor<TextOpacity, IconOpacity, 0>(paintProperties, isText, zoom),
             .halo_width_t = getInterpFactor<TextHaloWidth, IconHaloWidth, 0>(paintProperties, isText, zoom),
             .halo_blur_t = getInterpFactor<TextHaloBlur, IconHaloBlur, 0>(paintProperties, isText, zoom),
+            .terrain_pad0 = 0,
+            .terrain_pad1 = 0,
+            .terrain_pad2 = 0,
+            .terrain_matrix = dem.matrix,
+            .terrain_unpack = dem.unpack,
+            .terrain_dim = dem.dim,
+            .terrain_exaggeration = dem.exaggeration,
+            .terrain_elevation = dem.elevation,
+            .terrain_mode = dem.mode,
         };
 
 #if MLN_UBO_CONSOLIDATION

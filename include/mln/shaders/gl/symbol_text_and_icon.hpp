@@ -57,6 +57,13 @@ layout (std140) uniform SymbolDrawableUBO {
     highp float u_opacity_t;
     highp float u_halo_width_t;
     highp float u_halo_blur_t;
+
+    highp mat4 u_terrain_matrix;
+    highp vec4 u_terrain_unpack;
+    highp float u_terrain_dim;
+    highp float u_terrain_exaggeration;
+    highp float u_terrain_elevation;
+    highp float u_terrain_mode;
 };
 
 layout (std140) uniform SymbolEvaluatedPropsUBO {
@@ -97,6 +104,49 @@ out lowp float halo_width;
 layout (location = 8) in lowp vec2 a_halo_blur;
 out lowp float halo_blur;
 #endif
+
+uniform sampler2D u_terrain_dem;
+
+float terrain_texel_elevation(ivec2 pos) {
+    vec4 rgb = (texelFetch(u_terrain_dem, pos, 0) * 255.0) * u_terrain_unpack;
+    return rgb.r + rgb.g + rgb.b - u_terrain_unpack.a;
+}
+
+float terrain_elevation_at(vec2 pos) {
+    if (u_terrain_mode < 0.5) {
+        return 0.0;
+    }
+    if (u_terrain_mode < 1.5) {
+        return u_terrain_elevation;
+    }
+    vec2 coord = (u_terrain_matrix * vec4(pos, 0.0, 1.0)).xy * u_terrain_dim + 0.5;
+    vec2 f = fract(coord);
+    ivec2 c = ivec2(floor(coord));
+    ivec2 hi = textureSize(u_terrain_dem, 0) - 1;
+    float tl = terrain_texel_elevation(clamp(c, ivec2(0), hi));
+    float tr = terrain_texel_elevation(clamp(c + ivec2(1, 0), ivec2(0), hi));
+    float bl = terrain_texel_elevation(clamp(c + ivec2(0, 1), ivec2(0), hi));
+    float br = terrain_texel_elevation(clamp(c + ivec2(1, 1), ivec2(0), hi));
+    return mix(mix(tl, tr, f.x), mix(bl, br, f.x), f.y) * u_terrain_exaggeration;
+}
+
+vec4 terrain_raise(vec4 position, vec2 pos) {
+    if (u_terrain_mode < 0.5) {
+        return position;
+    }
+    float elevation = terrain_elevation_at(pos);
+    vec4 ground = u_matrix * vec4(pos, 0.0, 1.0);
+    vec4 raised = u_matrix * vec4(pos, elevation, 1.0);
+    if (ground.w <= 0.0 || raised.w <= 0.0) {
+        return vec4(-2.0, -2.0, -2.0, 1.0);
+    }
+    vec2 shift = raised.xy / raised.w - ground.xy / ground.w;
+    if (dot(shift, shift) > 4.0) {
+        return vec4(-2.0, -2.0, -2.0, 1.0);
+    }
+    position.xy += shift * position.w;
+    return position;
+}
 
 void main() {
     highp vec4 u_fill_color = u_is_text_prop ? u_text_fill_color : u_icon_fill_color;
@@ -192,6 +242,7 @@ lowp float halo_blur = u_halo_blur;
 
     vec4 projected_pos = u_label_plane_matrix * vec4(a_projected_pos.xy, 0.0, 1.0);
     gl_Position = u_coord_matrix * vec4(projected_pos.xy / projected_pos.w + rotation_matrix * (a_offset / 32.0 * fontScale), 0.0, 1.0);
+    gl_Position = terrain_raise(gl_Position, a_pos);
     float gamma_scale = gl_Position.w;
 
     vec2 fade_opacity = unpack_opacity(a_fade_opacity);

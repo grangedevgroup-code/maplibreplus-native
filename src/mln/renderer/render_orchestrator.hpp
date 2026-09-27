@@ -160,6 +160,11 @@ public:
 
     RenderTerrain* getTerrain() const { return terrain.get(); }
     bool hasTerrain() const { return terrain && terrain->isRenderable(); }
+    bool takeTerrainMoved() {
+        const bool moved = terrainMoved;
+        terrainMoved = false;
+        return moved;
+    }
 
     void updateDebugLayerGroups(const RenderTree& renderTree, PaintParameters& parameters);
 
@@ -262,6 +267,10 @@ private:
 
     std::vector<RenderTargetPtr> renderTargets;
     std::unique_ptr<RenderTerrain> terrain;
+    double terrainCenterElevationUsed = 0.0;
+    double terrainMinElevationUsed = 0.0;
+    double terrainMaxElevationUsed = 0.0;
+    bool terrainMoved = false;
     std::unique_ptr<RenderGlobe> globe;
     RenderItem::DebugLayerGroupMap debugLayerGroups;
 };

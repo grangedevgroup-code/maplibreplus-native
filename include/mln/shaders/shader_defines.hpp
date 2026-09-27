@@ -308,6 +308,7 @@ enum {
 };
 
 enum {
+    idCircleTerrainDemTexture,
     circleTextureCount
 };
 
@@ -371,6 +372,7 @@ enum {
 enum {
     idSymbolImageTexture,
     idSymbolImageIconTexture,
+    idSymbolTerrainDemTexture,
     symbolTextureCount
 };
 

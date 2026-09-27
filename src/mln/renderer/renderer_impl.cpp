@@ -277,6 +277,8 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
         orchestrator.updateDebugLayerGroups(renderTree, parameters);
 
         // Tweakers are run in the upload pass so they can set up uniforms.
+        parameters.terrain = (orchestrator.hasTerrain() && !orchestrator.hasGlobe()) ? orchestrator.getTerrain()
+                                                                                    : nullptr;
         parameters.currentLayer = 0;
         orchestrator.visitLayerGroups([&](LayerGroupBase& layerGroup) {
             layerGroup.runTweakers(renderTree, parameters);
@@ -531,9 +533,11 @@ void Renderer::Impl::render(const RenderTree& renderTree, const std::shared_ptr<
 
     context.renderingStats().encodingTime = renderTree.getElapsedTime() - context.renderingStats().renderingTime;
 
+    const bool terrainMoved = orchestrator.takeTerrainMoved();
     observer->onDidFinishRenderingFrame(
-        renderTreeParameters.loaded ? RendererObserver::RenderMode::Full : RendererObserver::RenderMode::Partial,
-        renderTreeParameters.needsRepaint,
+        renderTreeParameters.loaded && !terrainMoved ? RendererObserver::RenderMode::Full
+                                                     : RendererObserver::RenderMode::Partial,
+        renderTreeParameters.needsRepaint || terrainMoved,
         renderTreeParameters.placementChanged,
         context.threadSafeCopyRenderingStats());
 

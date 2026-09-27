@@ -37,6 +37,13 @@ layout (std140) uniform CircleDrawableUBO {
     lowp float drawable_pad1;
     lowp float drawable_pad2;
     lowp float drawable_pad3;
+
+    highp mat4 u_terrain_matrix;
+    highp vec4 u_terrain_unpack;
+    highp float u_terrain_dim;
+    highp float u_terrain_exaggeration;
+    highp float u_terrain_elevation;
+    highp float u_terrain_mode;
 };
 
 layout (std140) uniform CircleEvaluatedPropsUBO {
@@ -80,6 +87,49 @@ out mediump float stroke_width;
 layout (location = 7) in lowp vec2 a_stroke_opacity;
 out lowp float stroke_opacity;
 #endif
+
+uniform sampler2D u_terrain_dem;
+
+float terrain_texel_elevation(ivec2 pos) {
+    vec4 rgb = (texelFetch(u_terrain_dem, pos, 0) * 255.0) * u_terrain_unpack;
+    return rgb.r + rgb.g + rgb.b - u_terrain_unpack.a;
+}
+
+float terrain_elevation_at(vec2 pos) {
+    if (u_terrain_mode < 0.5) {
+        return 0.0;
+    }
+    if (u_terrain_mode < 1.5) {
+        return u_terrain_elevation;
+    }
+    vec2 coord = (u_terrain_matrix * vec4(pos, 0.0, 1.0)).xy * u_terrain_dim + 0.5;
+    vec2 f = fract(coord);
+    ivec2 c = ivec2(floor(coord));
+    ivec2 hi = textureSize(u_terrain_dem, 0) - 1;
+    float tl = terrain_texel_elevation(clamp(c, ivec2(0), hi));
+    float tr = terrain_texel_elevation(clamp(c + ivec2(1, 0), ivec2(0), hi));
+    float bl = terrain_texel_elevation(clamp(c + ivec2(0, 1), ivec2(0), hi));
+    float br = terrain_texel_elevation(clamp(c + ivec2(1, 1), ivec2(0), hi));
+    return mix(mix(tl, tr, f.x), mix(bl, br, f.x), f.y) * u_terrain_exaggeration;
+}
+
+vec4 terrain_raise(vec4 position, vec2 pos) {
+    if (u_terrain_mode < 0.5) {
+        return position;
+    }
+    float elevation = terrain_elevation_at(pos);
+    vec4 ground = u_matrix * vec4(pos, 0.0, 1.0);
+    vec4 raised = u_matrix * vec4(pos, elevation, 1.0);
+    if (ground.w <= 0.0 || raised.w <= 0.0) {
+        return vec4(-2.0, -2.0, -2.0, 1.0);
+    }
+    vec2 shift = raised.xy / raised.w - ground.xy / ground.w;
+    if (dot(shift, shift) > 4.0) {
+        return vec4(-2.0, -2.0, -2.0, 1.0);
+    }
+    position.xy += shift * position.w;
+    return position;
+}
 
 void main(void) {
     #ifndef HAS_UNIFORM_u_color
@@ -146,6 +196,8 @@ lowp float stroke_opacity = u_stroke_opacity;
             gl_Position.xy += extrude * (radius + stroke_width) * u_extrude_scale * gl_Position.w;
         }
     }
+
+    gl_Position = terrain_raise(gl_Position, circle_center);
 
     // This is a minimum blur distance that serves as a faux-antialiasing for
     // the circle. since blur is a ratio of the circle's size and the intent is

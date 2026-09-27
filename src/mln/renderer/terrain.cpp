@@ -11,6 +11,7 @@
 #include <mln/gfx/terrain_drawable_data.hpp>
 #include <mln/gfx/texture2d.hpp>
 #include <mln/gfx/upload_pass.hpp>
+#include <mln/util/constants.hpp>
 #include <mln/map/transform_state.hpp>
 #include <mln/renderer/buckets/hillshade_bucket.hpp>
 #include <mln/renderer/layer_tweaker.hpp>
@@ -215,6 +216,9 @@ void RenderTerrain::update(gfx::ShaderRegistry& shaders,
     for (auto it = demByTile.begin(); it != demByTile.end();) {
         it = visible.contains(it->first) ? std::next(it) : demByTile.erase(it);
     }
+    for (auto it = demTextures.begin(); it != demTextures.end();) {
+        it = visible.contains(it->first) ? std::next(it) : demTextures.erase(it);
+    }
 
     const float exaggeration = options.getExaggeration();
     const auto eleDelta = static_cast<float>(getSkirtLength(state.getZoom()));
@@ -283,6 +287,7 @@ void RenderTerrain::update(gfx::ShaderRegistry& shaders,
                                              .wrapU = gfx::TextureWrapType::Clamp,
                                              .wrapV = gfx::TextureWrapType::Clamp});
         builder->setTexture(demTexture, idTerrainDemTexture);
+        demTextures[tileID] = demTexture;
 
         builder->flush(context);
 
@@ -311,6 +316,7 @@ void RenderTerrain::teardown(UniqueChangeRequestVec& changes) {
     }
     renderTargets.clear();
     demByTile.clear();
+    demTextures.clear();
 
     if (layerGroup) {
         layerGroup->clearDrawables();
@@ -357,6 +363,53 @@ void RenderTerrain::render(RenderOrchestrator& orchestrator, PaintParameters& pa
     }
 }
 
+TerrainDemLookup RenderTerrain::demFor(const UnwrappedTileID& tile) const {
+    TerrainDemLookup out;
+    out.exaggeration = options.getExaggeration();
+
+    const OverscaledTileID* best = nullptr;
+    for (const auto& [id, texture] : demTextures) {
+        if (!texture || id.wrap != tile.wrap || id.canonical.z > tile.canonical.z) {
+            continue;
+        }
+        const uint8_t shift = tile.canonical.z - id.canonical.z;
+        if ((tile.canonical.x >> shift) != id.canonical.x || (tile.canonical.y >> shift) != id.canonical.y) {
+            continue;
+        }
+        if (best == nullptr || id.canonical.z > best->canonical.z) {
+            best = &id;
+        }
+    }
+
+    if (best != nullptr) {
+        const auto dem = demByTile.find(*best);
+        if (dem != demByTile.end() && dem->second) {
+            const double scale = 1.0 / static_cast<double>(1ull << (tile.canonical.z - best->canonical.z));
+            out.matrix = {};
+            out.matrix[0] = static_cast<float>(scale / util::EXTENT);
+            out.matrix[5] = static_cast<float>(scale / util::EXTENT);
+            out.matrix[10] = 1.0f;
+            out.matrix[15] = 1.0f;
+            out.matrix[12] = static_cast<float>(tile.canonical.x * scale - best->canonical.x);
+            out.matrix[13] = static_cast<float>(tile.canonical.y * scale - best->canonical.y);
+            out.texture = demTextures.at(*best);
+            out.unpack = dem->second->getUnpackVector();
+            out.dim = static_cast<float>(dem->second->dim);
+            out.mode = 2.0f;
+            return out;
+        }
+    }
+
+    if (!demByTile.empty()) {
+        const double tiles = static_cast<double>(1ull << tile.canonical.z);
+        const double lon = ((tile.canonical.x + 0.5) / tiles + tile.wrap) * 360.0 - 180.0;
+        const double lat = util::rad2deg(std::atan(std::sinh(M_PI * (1.0 - 2.0 * (tile.canonical.y + 0.5) / tiles))));
+        out.elevation = static_cast<float>(getElevation(LatLng(lat, lon, LatLng::Unwrapped), tile.canonical.z));
+        out.mode = 1.0f;
+    }
+    return out;
+}
+
 double RenderTerrain::getElevation(const LatLng& latLng, double zoom) const {
     if (demByTile.empty()) {
         return 0.0;
@@ -364,13 +417,23 @@ double RenderTerrain::getElevation(const LatLng& latLng, double zoom) const {
 
     const Point<double> mercator = Projection::project(latLng, 1.0) / util::tileSize_D;
 
+    const OverscaledTileID* best = nullptr;
     for (const auto& [tileID, demData] : demByTile) {
         const double tileScale = static_cast<double>(1ull << tileID.canonical.z);
         const double tileX = mercator.x * tileScale - tileID.canonical.x - tileID.wrap * tileScale;
         const double tileY = mercator.y * tileScale - tileID.canonical.y;
-        if (tileX < 0.0 || tileX >= 1.0 || tileY < 0.0 || tileY >= 1.0) {
-            continue;
+        if (tileX >= 0.0 && tileX < 1.0 && tileY >= 0.0 && tileY < 1.0 &&
+            (best == nullptr || tileID.canonical.z > best->canonical.z)) {
+            best = &tileID;
         }
+    }
+
+    if (best != nullptr) {
+        const OverscaledTileID& tileID = *best;
+        const auto& demData = demByTile.at(tileID);
+        const double tileScale = static_cast<double>(1ull << tileID.canonical.z);
+        const double tileX = mercator.x * tileScale - tileID.canonical.x - tileID.wrap * tileScale;
+        const double tileY = mercator.y * tileScale - tileID.canonical.y;
 
         const double px = tileX * demData->dim - 0.5;
         const double py = tileY * demData->dim - 0.5;

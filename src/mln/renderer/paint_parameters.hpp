@@ -20,6 +20,8 @@
 
 namespace mln {
 
+class RenderTerrain;
+
 class UpdateParameters;
 class RenderStaticData;
 class TransformState;
@@ -99,6 +101,7 @@ public:
 
     const mat4* projMatrixOverride = nullptr;
     const UnwrappedTileID* renderTargetTile = nullptr;
+    const RenderTerrain* terrain = nullptr;
 
     // Stencil handling
 public:

@@ -29,6 +29,12 @@ struct CircleDrawableUBO {
     pad1: f32,
     pad2: f32,
     pad3: f32,
+    terrain_matrix: mat4x4<f32>,
+    terrain_unpack: vec4<f32>,
+    terrain_dim: f32,
+    terrain_exaggeration: f32,
+    terrain_elevation: f32,
+    terrain_mode: f32,
 };
 
 struct CircleEvaluatedPropsUBO {

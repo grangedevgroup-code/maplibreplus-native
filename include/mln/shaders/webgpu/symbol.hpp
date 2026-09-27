@@ -52,6 +52,12 @@ struct SymbolDrawableUBO {
     opacity_t: f32,
     halo_width_t: f32,
     halo_blur_t: f32,
+    terrain_matrix: mat4x4<f32>,
+    terrain_unpack: vec4<f32>,
+    terrain_dim: f32,
+    terrain_exaggeration: f32,
+    terrain_elevation: f32,
+    terrain_mode: f32,
 };
 
 struct SymbolTilePropsUBO {

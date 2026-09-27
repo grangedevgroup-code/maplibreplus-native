@@ -405,10 +405,17 @@ std::vector<OverscaledTileID> tileCover(const TileCoverParameters& state,
         }
 
         bool shouldSplitTile;
+        bool beyondCenter = false;
         if (state.tileLodMode == TileLodMode::Distance) {
             const vec3 camToTileMercator = vec3Scale(node.aabb.distanceXYZ(cameraCoord), 1.0 / worldSize);
             const double distanceToTileMercator = vec3Length(camToTileMercator);
-            const double cosPitchToTile = std::max(0.0, camToTileMercator[2] / distanceToTileMercator);
+            beyondCenter = distanceToTileMercator * nominalScale > cameraToCenterDistanceMercator * nominalScale;
+            vec3 camToGroundMercator = camToTileMercator;
+            camToGroundMercator[2] = std::max(camToTileMercator[2], (cameraCoord[2] - node.aabb.min[2]) / worldSize);
+            const double distanceToGroundMercator = vec3Length(camToGroundMercator);
+            const double cosPitchToTile = distanceToGroundMercator > 0.0
+                                              ? std::max(0.0, camToGroundMercator[2] / distanceToGroundMercator)
+                                              : 1.0;
             const double pitchExponent =
                 0.5; // 0: constant screen width, 1/2: constant screen area, 1: constant screen height
             double tileScale = std::pow(2.0, node.zoom);
@@ -434,6 +441,9 @@ std::vector<OverscaledTileID> tileCover(const TileCoverParameters& state,
         }
 
         // Have we reached the target depth or is the tile too far away to be any split further?
+        if (!shouldSplitTile && node.zoom < minZoom && beyondCenter) {
+            continue;
+        }
         if (node.zoom == maxZoom || (!shouldSplitTile && node.zoom >= minZoom)) {
             // Perform precise intersection test between the frustum and aabb.
             // This will cull < 1% false positives missed by the original test

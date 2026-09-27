@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <mln/gfx/texture2d.hpp>
 #include <mln/renderer/change_request.hpp>
 #include <mln/renderer/layer_group.hpp>
 #include <mln/renderer/tile_render_target.hpp>
@@ -35,6 +37,16 @@ using TerrainLayoutVertex = gfx::Vertex<TypeList<attributes::pos3d>>;
 using TerrainVertexVector = gfx::VertexVector<TerrainLayoutVertex>;
 using TerrainIndexVector = gfx::IndexVector<gfx::Triangles>;
 
+struct TerrainDemLookup {
+    gfx::Texture2DPtr texture;
+    std::array<float, 16> matrix{};
+    std::array<float, 4> unpack{};
+    float dim = 0.0f;
+    float exaggeration = 1.0f;
+    float elevation = 0.0f;
+    float mode = 0.0f;
+};
+
 class RenderTerrain {
 public:
     RenderTerrain();
@@ -58,6 +70,7 @@ public:
     void render(RenderOrchestrator&, PaintParameters&);
 
     double getElevation(const LatLng&, double zoom) const;
+    TerrainDemLookup demFor(const UnwrappedTileID&) const;
     double getMinElevation() const { return minElevation; }
     double getMaxElevation() const { return maxElevation; }
 
@@ -77,6 +90,7 @@ private:
 
     std::map<OverscaledTileID, TileRenderTargetPtr> renderTargets;
     std::map<OverscaledTileID, std::shared_ptr<const DEMData>> demByTile;
+    std::map<OverscaledTileID, gfx::Texture2DPtr> demTextures;
 
     double minElevation = 0;
     double maxElevation = 0;

@@ -40,9 +40,18 @@ struct alignas(16) SymbolDrawableUBO {
     /* 248 */ float opacity_t;
     /* 252 */ float halo_width_t;
     /* 256 */ float halo_blur_t;
+    /* 260 */ float terrain_pad0;
+    /* 264 */ float terrain_pad1;
+    /* 268 */ float terrain_pad2;
+    /* 272 */ float4x4 terrain_matrix;
+    /* 336 */ float4 terrain_unpack;
+    /* 352 */ float terrain_dim;
+    /* 356 */ float terrain_exaggeration;
+    /* 360 */ float terrain_elevation;
+    /* 364 */ float terrain_mode;
     /* 260 */
 };
-static_assert(sizeof(SymbolDrawableUBO) == 17 * 16, "wrong size");
+static_assert(sizeof(SymbolDrawableUBO) == 23 * 16, "wrong size");
 
 struct alignas(16) SymbolTilePropsUBO {
     /*  0 */ /*bool*/ int is_text;

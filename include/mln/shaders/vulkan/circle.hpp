@@ -71,7 +71,12 @@ struct CircleDrawableUBO {
     float stroke_opacity_t;
     float pad1;
     float pad2;
-    float pad3;
+    float pad3;    mat4 terrain_matrix;
+    vec4 terrain_unpack;
+    float terrain_dim;
+    float terrain_exaggeration;
+    float terrain_elevation;
+    float terrain_mode;
 };
 
 layout(std140, set = LAYER_SET_INDEX, binding = idCircleDrawableUBO) readonly buffer CircleDrawableUBOVector {

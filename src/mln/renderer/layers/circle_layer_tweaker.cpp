@@ -5,6 +5,7 @@
 #include <mln/renderer/buckets/circle_bucket.hpp>
 #include <mln/renderer/layer_group.hpp>
 #include <mln/renderer/paint_parameters.hpp>
+#include <mln/renderer/terrain.hpp>
 #include <mln/renderer/render_tree.hpp>
 #include <mln/shaders/circle_layer_ubo.hpp>
 #include <mln/shaders/shader_source.hpp>
@@ -83,6 +84,12 @@ void CircleLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
         const auto matrix = getTileMatrix(
             tileID, parameters, translation, anchor, nearClipped, inViewportPixelUnits, drawable);
 
+        TerrainDemLookup dem;
+        if (parameters.terrain != nullptr && layerGroup.isScreenSpace()) {
+            dem = parameters.terrain->demFor(tileID);
+        }
+        drawable.setTexture(dem.texture, idCircleTerrainDemTexture);
+
         const auto pixelsToTileUnits = tileID.pixelsToTileUnits(1.0f, zoom);
         const auto extrudeScale = pitchWithMap ? std::array<float, 2>{pixelsToTileUnits, pixelsToTileUnits}
                                                : parameters.pixelsToGLUnits;
@@ -105,7 +112,13 @@ void CircleLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
             .stroke_opacity_t = std::get<0>(binders->get<CircleStrokeOpacity>()->interpolationFactor(zoom)),
             .pad1 = 0,
             .pad2 = 0,
-            .pad3 = 0
+            .pad3 = 0,
+            .terrain_matrix = dem.matrix,
+            .terrain_unpack = dem.unpack,
+            .terrain_dim = dem.dim,
+            .terrain_exaggeration = dem.exaggeration,
+            .terrain_elevation = dem.elevation,
+            .terrain_mode = dem.mode
         };
 #if MLN_UBO_CONSOLIDATION
         drawable.setUBOIndex(i++);

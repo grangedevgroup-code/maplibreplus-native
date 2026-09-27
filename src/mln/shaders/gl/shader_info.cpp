@@ -62,7 +62,9 @@ const std::vector<AttributeInfo> CircleShaderInfo::attributes = {
     AttributeInfo{"a_stroke_width", idCircleStrokeWidthVertexAttribute},
     AttributeInfo{"a_stroke_opacity", idCircleStrokeOpacityVertexAttribute},
 };
-const std::vector<TextureInfo> CircleShaderInfo::textures = {};
+const std::vector<TextureInfo> CircleShaderInfo::textures = {
+    TextureInfo{"u_terrain_dem", idCircleTerrainDemTexture},
+};
 
 // Collision Box
 using CollisionBoxShaderInfo = ShaderInfo<BuiltIn::CollisionBoxShader, gfx::Backend::Type::OpenGL>;
@@ -456,6 +458,7 @@ const std::vector<AttributeInfo> SymbolIconShaderInfo::attributes = {
 };
 const std::vector<TextureInfo> SymbolIconShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
+    TextureInfo{"u_terrain_dem", idSymbolTerrainDemTexture},
 };
 
 // Symbol SDF
@@ -481,6 +484,7 @@ const std::vector<AttributeInfo> SymbolSDFShaderInfo::attributes = {
 };
 const std::vector<TextureInfo> SymbolSDFShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
+    TextureInfo{"u_terrain_dem", idSymbolTerrainDemTexture},
 };
 
 // Symbol Text & Icon
@@ -506,6 +510,7 @@ const std::vector<AttributeInfo> SymbolTextAndIconShaderInfo::attributes = {
 const std::vector<TextureInfo> SymbolTextAndIconShaderInfo::textures = {
     TextureInfo{"u_texture", idSymbolImageTexture},
     TextureInfo{"u_texture_icon", idSymbolImageIconTexture},
+    TextureInfo{"u_terrain_dem", idSymbolTerrainDemTexture},
 };
 
 // Globe

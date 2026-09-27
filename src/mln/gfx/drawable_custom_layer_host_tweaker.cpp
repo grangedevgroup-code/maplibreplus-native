@@ -35,6 +35,8 @@ void DrawableCustomLayerHostTweaker::execute([[maybe_unused]] gfx::Drawable& dra
     style::vulkan::CustomLayerRenderParameters parameters(paintParameters);
 #else
     style::CustomLayerRenderParameters parameters(paintParameters);
+    context.setDirtyState();
+    paintParameters.backend.getDefaultRenderable().getResource<gfx::RenderableResource>().bind();
 #endif
 
     host->render(parameters);

@@ -491,6 +491,9 @@ void RenderSymbolLayer::update(gfx::ShaderRegistry& shaders,
             setLayerGroup(std::move(layerGroup_), changes);
         }
     }
+    if (layerGroup) {
+        layerGroup->setScreenSpace(!state.isGlobeRendering());
+    }
 
     if (!layerTweaker) {
         layerTweaker = std::make_shared<SymbolLayerTweaker>(getID(), evaluatedProperties);

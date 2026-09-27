@@ -70,7 +70,9 @@ void TileRenderTarget::render(RenderOrchestrator& orchestrator,
 
     parameters.currentLayer = 0;
     orchestrator.visitLayerGroups([&](LayerGroupBase& layerGroup) {
-        layerGroup.runTweakers(renderTree, parameters);
+        if (!layerGroup.isScreenSpace()) {
+            layerGroup.runTweakers(renderTree, parameters);
+        }
         parameters.currentLayer++;
     });
 

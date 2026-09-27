@@ -192,16 +192,20 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
     double terrainMaxElevation = 0.0;
     const bool terrainActive = updateParameters->terrain && updateParameters->terrain->valid() &&
                                !transformState.isGlobeRendering();
+    terrainCenterElevationUsed = 0.0;
     if (terrain && terrainActive) {
         const LatLng center = transformState.getLatLng();
         const double metersPerPixel = Projection::getMetersPerPixelAtLatitude(center.latitude(),
                                                                               transformState.getZoom());
+        terrainCenterElevationUsed = terrain->getElevation(center, transformState.getZoom());
         if (metersPerPixel > 0.0) {
-            transformState.setZ(terrain->getElevation(center, transformState.getZoom()) / metersPerPixel);
+            transformState.setZ(terrainCenterElevationUsed / metersPerPixel);
         }
         terrainMinElevation = terrain->getMinElevation();
         terrainMaxElevation = terrain->getMaxElevation();
     }
+    terrainMinElevationUsed = terrainMinElevation;
+    terrainMaxElevationUsed = terrainMaxElevation;
 
     TileParameters tileParameters{.pixelRatio = updateParameters->pixelRatio,
                                   .debugOptions = updateParameters->debugOptions,
@@ -1000,6 +1004,14 @@ void RenderOrchestrator::updateTerrain(gfx::ShaderRegistry& shaders,
 
     RenderSource* demSource = getRenderSource(options->getSource());
     terrain->update(shaders, context, state, demSource, changes);
+
+    constexpr double toleranceMeters = 0.5;
+    const double centerElevation = terrain->getElevation(state.getLatLng(), state.getZoom());
+    if (std::abs(centerElevation - terrainCenterElevationUsed) > toleranceMeters ||
+        std::abs(terrain->getMinElevation() - terrainMinElevationUsed) > toleranceMeters ||
+        std::abs(terrain->getMaxElevation() - terrainMaxElevationUsed) > toleranceMeters) {
+        terrainMoved = true;
+    }
 }
 
 void RenderOrchestrator::updateGlobe(gfx::ShaderRegistry& shaders,
